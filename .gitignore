@@ -6,3 +6,16 @@ out/
 *.ipr
 *.iws
 .vscode/
+
+# Claude Code local runtime/session state - not shared between clones or machines.
+# (.git/info/exclude also has these on this machine, but that file never leaves the local clone.)
+.claude/scheduled_tasks.lock
+.claude/scheduled_tasks.json
+.claude/routines/.state/
+.claude/worktrees/
+.claude/checkpoints/
+.claude/mailbox/
+.claude/agent-registry.json
+.claude/agent-memory-local
+.claude/first-run
+.claude/assistant-daemon-state.json
