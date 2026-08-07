@@ -1,0 +1,22 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "worklog",
+    "project_id": "cata-runelite-plugin",
+    "task_id": "runelite-plugin-buildout",
+    "updated_at": "2026-08-07T21:05:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-1",
+      "type": "note",
+      "timestamp": "2026-08-07T21:05:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Pausing for a local directory restructure across the three related repos; environment was verified clean beforehand.",
+      "detail": "User is moving/restructuring the local directory layout for the three related repos (cata-runelite-plugin, catabot, catabot-web) to make cross-project work easier, and will likely start a fresh chat afterward. Before the move, confirmed and cleared all live state: no java.exe/RuneLite client running, no Gradle daemons registered, and killed 8 orphaned background bash.exe monitor-loop processes left over from a prior session (harness had marked them stopped but the OS processes were still alive). Final verification showed zero processes referencing the project directory. Nothing should block the move. Also note for the resumed session: apiBase now defaults to http://localhost:8080 (catabot's bot-hosted API, not the website) and websiteBase to http://localhost:3000 (catabot-web, used only for the View Event link) - see README.md and KI-004 in concerns.json for the endpoint-path migration details. A gradlew-downloaded Gradle distro used this session lives outside the repo in the OS temp scratchpad and is not needed going forward; the committed ./gradlew wrapper re-downloads Gradle on its own next time it's run.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

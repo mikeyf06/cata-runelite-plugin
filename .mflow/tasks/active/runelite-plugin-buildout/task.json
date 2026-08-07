@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-08-07T21:00:00Z"
+  },
+  "task_id": "runelite-plugin-buildout",
+  "track": "JDI",
+  "status": "in_progress",
+  "project_type": "personal",
+  "branch": "feature/runelite-plugin-buildout",
+  "request": {
+    "summary": "Scaffold, redesign, and migrate the Catastrophic Events RuneLite plugin: built the POC plugin from poc-runelite-plugin.md, verified it against a real RuneLite client, redesigned the side panel to match a provided mockup, and migrated the plugin's API target from catabot-web to catabot's bot-hosted HTTP server, including an events-disappearing bug fix on both sides.",
+    "submitted_at": "2026-08-07T21:00:00Z",
+    "raw_requirements": "RuneLite plugin POC: scaffolded the Catastrophic Events RuneLite plugin from poc-runelite-plugin.md (config, poll loop, side panel, signup, reminders, Discord deep-link), verified it compiles and runs against a real RuneLite client (JDK 11 + Gradle wrapper committed), then did a full visual redesign of the side panel to match a provided mockup (tabs, hero card, compact rows, custom rounded/pill buttons, live-ticking countdown), and migrated the plugin's target API from catabot-web to catabot's own HTTP server (bot now hosts /events, /signup, /checkin; website is being deprecated for this). Also fixed an events-disappearing bug (endsAt/grace-period logic) on both the website and bot sides."
+  },
+  "quote": null,
+  "plan": null,
+  "verification": {
+    "status": null,
+    "checked_at": null,
+    "notes": null,
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-08-07T21:00:00Z",
+    "updated_at": "2026-08-07T21:00:00Z"
+  }
+}
