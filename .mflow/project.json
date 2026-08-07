@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "project",
+    "updated_at": "2026-08-07T19:55:39Z"
+  },
+  "project_id": "cata-runelite-plugin",
+  "display_name": "Catastrophic Events",
+  "type": "personal",
+  "client": {
+    "name": null,
+    "primary_contact": null,
+    "contact_email": null
+  },
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/mikeyf06/cata-runelite-plugin.git",
+    "default_branch": "main",
+    "branching_strategy": {
+      "convention": "gitflow-simplified",
+      "branches": {
+        "production": "main",
+        "staging": "staging",
+        "feature": "feature/{task_id}",
+        "bugfix": "bugfix/{task_id}",
+        "hotfix": "hotfix/{task_id}",
+        "chore": "chore/{task_id}"
+      },
+      "flow": "feature → staging → main",
+      "hotfix_flow": "hotfix → main → backmerge to staging"
+    }
+  },
+  "stack": {
+    "language": "Java 11",
+    "framework": "RuneLite Client Plugin API (Guice DI)",
+    "database": "none (client-side plugin; talks to sibling repo catabot's HTTP API)",
+    "orm": "none",
+    "frontend": "Java Swing, custom-painted (via RuneLite PluginPanel)",
+    "hosting": "RuneLite Plugin Hub (distribution only, no runtime hosting)"
+  },
+  "environments": {
+    "development": "Local: ./gradlew run boots a full RuneLite client with the plugin preloaded, against a locally-running catabot API (default http://localhost:8080)",
+    "staging": null,
+    "production": null
+  },
+  "deployment": {
+    "exclude_from_build": [".mflow/**"],
+    "reminder": "Ensure .mflow/ is excluded from all deployment pipelines."
+  },
+  "timestamps": {
+    "created_at": "2026-08-07T19:55:39Z",
+    "updated_at": "2026-08-07T19:55:39Z"
+  }
+}

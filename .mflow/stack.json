@@ -1,0 +1,64 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "stack",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-08-07T19:52:42Z"
+  },
+  "runtime": {
+    "language": "Java",
+    "framework": "RuneLite Client Plugin API (Guice-based plugin framework)",
+    "version": "Java 11 (build.gradle sets options.release = 11); Gradle 8.10.2 via committed wrapper"
+  },
+  "database": {
+    "engine": null,
+    "version": null,
+    "orm": null,
+    "migrations": null
+  },
+  "frontend": {
+    "framework": "Java Swing, custom-painted (no default Look & Feel chrome) via RuneLite's PluginPanel",
+    "version": "Bundled with JDK 11 (javax.swing)",
+    "bundler": null,
+    "styling": "Hand-rolled theme constants and custom-painted components (CatastrophicTheme.java, RoundedPanel, StyledButton, etc.) - no CSS or external styling system"
+  },
+  "hosting": {
+    "provider": "RuneLite Plugin Hub (distribution channel only)",
+    "services": [
+      "Runs entirely client-side inside the user's RuneLite client - no server component in this repo",
+      "Depends at runtime on a separately-hosted backend: the 'catabot' Discord bot's HTTP API (PLUGIN_API_PORT, default 8080), a sibling repo at ../catabot"
+    ]
+  },
+  "key_packages": [
+    {
+      "name": "net.runelite:client",
+      "version": "latest.release (not pinned)",
+      "purpose": "RuneLite plugin API - Guice DI, ClientToolbar/NavigationButton, ChatMessageManager, ConfigManager, provisions OkHttpClient and Gson instances used throughout"
+    },
+    {
+      "name": "org.projectlombok:lombok",
+      "version": "1.18.30",
+      "purpose": "Compile-time boilerplate reduction - @Slf4j (logging), @Getter (DTOs), @RequiredArgsConstructor (SignupRequest)"
+    },
+    {
+      "name": "com.google.code.gson (Gson)",
+      "version": "unpinned - transitively resolved via net.runelite:client",
+      "purpose": "JSON (de)serialization for API DTOs (api/dto package), using @SerializedName to map snake_case JSON to camelCase fields"
+    },
+    {
+      "name": "com.squareup.okhttp3 (OkHttp)",
+      "version": "unpinned - transitively resolved via net.runelite:client, instance injected by RuneLite",
+      "purpose": "Async HTTP client for calling the bot's plugin API (EventsApiClient)"
+    },
+    {
+      "name": "junit:junit",
+      "version": "4.12",
+      "purpose": "Test-scope dependency; currently unused for real tests - src/test only contains a manual dev-launcher, not JUnit tests"
+    },
+    {
+      "name": "net.runelite:jshell",
+      "version": "latest.release (not pinned)",
+      "purpose": "Test-scope RuneLite dev-shell dependency used to boot a full client for local manual testing"
+    }
+  ]
+}

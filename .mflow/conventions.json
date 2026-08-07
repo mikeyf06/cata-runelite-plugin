@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "conventions",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-08-07T19:52:42Z"
+  },
+  "naming": {
+    "controllers": "N/A - no MVC controllers. The closest analog is the Plugin class itself, suffixed 'Plugin' (CatastrophicEventsPlugin)",
+    "services": "N/A - no dedicated service layer. API access lives in a single class suffixed 'ApiClient' (EventsApiClient)",
+    "repositories": "N/A - no repository layer or local persistence beyond RuneLite's built-in ConfigManager",
+    "models": "DTOs suffixed by role rather than a generic 'Model' - EventDto, EventsResponse, SignupRequest, SignupResponse; sub-objects are nested static classes (EventDto.Attendance)",
+    "dtos": "PascalCase + role suffix (Dto/Request/Response) in the api/dto package; Gson @SerializedName maps backend snake_case JSON fields (start_at, discord_channel_id, event_id) to camelCase Java fields",
+    "database_tables": "unknown - no local database; backend schema lives in the sibling catabot repo, not visible from here",
+    "database_columns": "unknown - see above"
+  },
+  "file_structure": {
+    "feature_grouping": false,
+    "layer_grouping": true,
+    "test_location": "src/test/java mirrors the src/main/java package structure (standard Gradle/Maven convention), but currently holds only a manual dev-launcher (CatastrophicEventsPluginTest.main), not automated unit tests"
+  },
+  "code_style": {
+    "async_suffix": false,
+    "nullable_enabled": false,
+    "var_usage": "No `var` usage found anywhere in src/ - explicit types used throughout despite Java 11 supporting var"
+  },
+  "notes": "Global git and branch conventions are defined in ~/.mflow/config.json and apply to all projects. Per-project overrides can be added here if needed. Project-specific style observed: Allman brace style (opening brace on its own line) with tab indentation, applied consistently across every file in src/ - a deliberate deviation from the more common Java K&R/Google style. Lombok is used liberally to cut boilerplate (@Slf4j for logging, @Getter on DTOs, @RequiredArgsConstructor on SignupRequest). Async HTTP results flow through a custom ApiCallback<T> interface (onSuccess/onError) rather than Futures or async/await-style naming. No CI/CD configuration exists in this repo (no .github/workflows or equivalent) - no automated build, lint, or test pipeline runs today; verification is manual via `./gradlew run`."
+}

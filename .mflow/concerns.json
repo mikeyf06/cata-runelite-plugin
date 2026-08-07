@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "concerns",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-08-07T19:52:42Z"
+  },
+  "tech_debt": [
+    {
+      "id": "TD-001",
+      "summary": "No automated unit or integration tests exist. src/test/java contains only CatastrophicEventsPluginTest.main(), a manual dev-launcher that boots a full RuneLite client for eyeballing - not a real test.",
+      "severity": "medium",
+      "area": "src/test/java",
+      "noted_at": "2026-08-07"
+    },
+    {
+      "id": "TD-002",
+      "summary": "Gson and OkHttp versions are not pinned in build.gradle - both are pulled in transitively via net.runelite:client, which itself resolves to 'latest.release'. Builds are not reproducible; a RuneLite client update can silently change JSON parsing or HTTP behavior underneath the plugin with no version diff to point at.",
+      "severity": "medium",
+      "area": "build.gradle",
+      "noted_at": "2026-08-07"
+    },
+    {
+      "id": "TD-003",
+      "summary": "runelite-plugin.properties has an empty `version` field.",
+      "severity": "low",
+      "area": "runelite-plugin.properties",
+      "noted_at": "2026-08-07"
+    }
+  ],
+  "known_issues": [
+    {
+      "id": "KI-001",
+      "summary": "No endpoint returns a Discord guild ID, so guildId must be manually entered by each user in config rather than fetched from the API - documented as a known gap in README.md.",
+      "severity": "low",
+      "area": "CatastrophicEventsConfig.java, ui/CatastrophicEventsPanel.java#openDiscordServer",
+      "noted_at": "2026-08-07"
+    },
+    {
+      "id": "KI-002",
+      "summary": "The events API response has no `host` field yet (backend Event model has hostDiscordId but GET /events doesn't return it) - both EventHeroCard and EventCompactRow omit the Host row entirely rather than showing a placeholder, per README's documented decision.",
+      "severity": "low",
+      "area": "ui/EventHeroCard.java, ui/EventCompactRow.java",
+      "noted_at": "2026-08-07"
+    },
+    {
+      "id": "KI-003",
+      "summary": "No 'expected world' field exists on events yet, so EventHeroCard's World row is hardcoded to the literal string 'Not set by host yet' and no auto-check-in logic (comparing against client.getWorld()) can be built.",
+      "severity": "low",
+      "area": "ui/EventHeroCard.java",
+      "noted_at": "2026-08-07"
+    },
+    {
+      "id": "KI-004",
+      "summary": "poc-runelite-plugin.md (the original scope/design doc) still documents the old /api/plugin/* endpoint paths hosted by catabot-web; the actual bot API used today has no /api/plugin prefix (GET {apiBase}/events, POST {apiBase}/signup). The design doc is stale and should not be trusted for endpoint paths - README.md has the corrected paths.",
+      "severity": "medium",
+      "area": "poc-runelite-plugin.md vs README.md",
+      "noted_at": "2026-08-07"
+    }
+  ],
+  "warnings": [
+    {
+      "id": "WRN-001",
+      "summary": "This plugin has a hard runtime dependency on a sibling repo's HTTP API contract (catabot's PLUGIN_API_PORT server, ../catabot on disk) that is not versioned, mocked, or tested from within this repo. Gson's fromJson does not fail loudly on missing/renamed fields, so a breaking change to catabot's /events or /signup response shape would silently degrade (nulls) rather than error clearly here.",
+      "area": "api/dto/*, api/EventsApiClient.java"
+    },
+    {
+      "id": "WRN-002",
+      "summary": "EventDto.minutesUntilStart() throws on an unparsable start_at. The plugin's own reminder loop (checkReminderMilestones) catches this per-event and silently skips it, while the UI layer duplicates the same null-safety logic independently via a separate safeMinutesUntilStart() wrapper in EventHeroCard - the guard is implemented twice rather than centralized on the DTO.",
+      "area": "api/dto/EventDto.java, CatastrophicEventsPlugin.java, ui/EventHeroCard.java"
+    },
+    {
+      "id": "WRN-003",
+      "summary": "The plugin token is stored in RuneLite's ConfigManager with only UI-level masking (secret=true) - this is a deliberate, documented design decision (poc-runelite-plugin.md), not an oversight. Do not 'fix' this without confirming the intended trust model with the project owner first.",
+      "area": "CatastrophicEventsConfig.java"
+    },
+    {
+      "id": "WRN-004",
+      "summary": "apiBase defaults to plain HTTP (http://localhost:8080) and nothing warns or blocks a user from pointing it at a non-local, non-TLS host - the Bearer token would then travel in cleartext.",
+      "area": "CatastrophicEventsConfig.java, api/EventsApiClient.java"
+    }
+  ],
+  "dependencies_at_risk": [
+    {
+      "package": "net.runelite:client",
+      "reason": "Pinned to 'latest.release' rather than a fixed version - every build can silently pick up a newer RuneLite client API with no lockfile, making breakage hard to reproduce or bisect.",
+      "severity": "medium",
+      "mitigation": "Pin to a specific released version and bump deliberately; consider a CI job that builds against the pin to catch upstream breakage early."
+    },
+    {
+      "package": "net.runelite:jshell",
+      "reason": "Also pinned to 'latest.release'; test-scope only, so lower blast radius, but same reproducibility risk as net.runelite:client.",
+      "severity": "low",
+      "mitigation": "Pin alongside net.runelite:client."
+    },
+    {
+      "package": "junit:junit:4.12",
+      "reason": "JUnit 4.12 (2017) is superseded by 4.13.x / JUnit 5. Currently unused for real tests (see TD-001), so the risk is latent rather than active.",
+      "severity": "low",
+      "mitigation": "Upgrade when real unit tests are introduced; consider adopting JUnit 5 at that point instead of bumping in place."
+    }
+  ]
+}

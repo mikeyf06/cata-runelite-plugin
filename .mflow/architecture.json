@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "architecture",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-08-07T19:52:42Z"
+  },
+  "pattern": "Single-plugin layered architecture following RuneLite's standard external-plugin shape: a Guice-injected Plugin class as orchestrator/controller, a dedicated HTTP API client layer, a Gson DTO layer mirroring the backend's JSON contract, and a Swing view layer (state-routed panel + presentational cards + a custom widget kit). Not MVC/MVVM in a strict sense - closer to a thin controller (the Plugin class) pushing state into a stateful, self-rendering View (CatastrophicEventsPanel).",
+  "layers": [
+    {
+      "name": "Plugin entrypoint / orchestrator",
+      "path": "src/main/java/com/catastrophic/events/CatastrophicEventsPlugin.java",
+      "responsibility": "Guice lifecycle (startUp/shutDown), schedules the 45s poll loop, drives reminder-milestone logic, wires the panel's join-button callback to the API client, routes API results/errors into panel state transitions"
+    },
+    {
+      "name": "Config",
+      "path": "src/main/java/com/catastrophic/events/CatastrophicEventsConfig.java",
+      "responsibility": "RuneLite ConfigGroup interface declaring the plugin's user-facing settings (token, apiBase, websiteBase, guildId) with defaults, surfaced both in RuneLite's standard config UI and in the plugin's own inline SettingsView"
+    },
+    {
+      "name": "API client",
+      "path": "src/main/java/com/catastrophic/events/api/",
+      "responsibility": "EventsApiClient wraps OkHttp calls to the bot's plugin API (GET /events, POST /signup); ApiCallback<T> is the async result interface; ApiErrorType classifies failures (UNAUTHORIZED / NETWORK / SERVER) so callers can branch on cause"
+    },
+    {
+      "name": "DTOs",
+      "path": "src/main/java/com/catastrophic/events/api/dto/",
+      "responsibility": "Gson-deserialized shapes matching the bot's plugin API JSON exactly (EventDto, EventsResponse, SignupRequest, SignupResponse); ids are Strings because they're Mongo ObjectIds on the backend"
+    },
+    {
+      "name": "UI / View",
+      "path": "src/main/java/com/catastrophic/events/ui/",
+      "responsibility": "CatastrophicEventsPanel is the top-level state machine (NOT_LINKED / CONNECTION_ERROR / EVENTS) and tab router (All Events / My Events); EventHeroCard and EventCompactRow are presentational cards; SettingsView is the inline config form; StyledButton, CircleIconButton, PillBadge, RoundedPanel, WrappingLabel, AvatarIcon, CatastrophicTheme form a small custom-painted widget kit (gold-on-black theme, no default Swing L&F chrome)"
+    },
+    {
+      "name": "Dev launcher",
+      "path": "src/test/java/com/catastrophic/events/CatastrophicEventsPluginTest.java",
+      "responsibility": "Boots a full RuneLite client in developer mode with the plugin preloaded, for manual local testing via `./gradlew run` - not an automated test despite living under src/test"
+    }
+  ],
+  "key_patterns": [
+    "Dependency Injection via Guice (RuneLite's plugin framework) - @Inject fields, @Provides for CatastrophicEventsConfig",
+    "Async callback interface for HTTP results (ApiCallback<T>), wrapping OkHttp's own Callback",
+    "Explicit state machine driving a full re-render (CatastrophicEventsPanel.State enum; render() rebuilds the entire body panel on every state/tab change rather than diffing)",
+    "DTO/contract isolation - api/dto package exists solely to mirror the bot's JSON shape, translated via Gson @SerializedName, kept separate from UI/domain logic",
+    "Composable custom Swing widget kit instead of the platform look-and-feel"
+  ],
+  "key_decisions": [
+    {
+      "decision": "Reminders are private and client-side only, rendered via ChatMessageManager - nothing is sent to the game server or the backend",
+      "reason": "No rate-limit or game-integrity concerns apply since it's purely local rendering; documented explicitly in poc-runelite-plugin.md",
+      "made_at": "unknown (pre-dates this repo's git history - carried over from the original POC design doc)"
+    },
+    {
+      "decision": "The plugin token is stored in RuneLite's local ConfigManager, UI-masked (secret=true) but not otherwise encrypted",
+      "reason": "Same trust model as any other plugin credential - local to the user's own machine",
+      "made_at": "unknown (pre-dates this repo's git history)"
+    },
+    {
+      "decision": "Discord deep-link and the website's 'View Event' page are opened via Desktop.browse() (OS-level action), not rendered in-panel",
+      "reason": "No automation caution applies to opening the user's own default browser",
+      "made_at": "unknown (pre-dates this repo's git history)"
+    },
+    {
+      "decision": "Auto check-in, drop-screenshot capture, join-VC, and LFC browsing are out of scope for this POC but shown as visible, disabled 'Coming soon' rows in the My Events hero card rather than hidden entirely",
+      "reason": "The mocked-up design the panel was built against calls for them to be visible",
+      "made_at": "2026-08-07 (per README 'What's implemented' section, first commit)"
+    }
+  ]
+}
