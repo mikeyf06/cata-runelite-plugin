@@ -8,12 +8,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import javax.swing.JButton;
 
 /**
- * A small circular button showing a single glyph, for the footer icon row. Deliberately not a
- * bitmap-font label - uses a plain system font so the glyph renders reliably regardless of what
- * RuneLite's bundled RuneScape font happens to cover.
+ * A small circular button for the footer icon row, showing either a text glyph (drawn with a
+ * plain system font, not RuneLite's bitmap RuneScape font, so coverage is never a gamble) or a
+ * bundled image (e.g. an official brand mark).
  */
 class CircleIconButton extends JButton
 {
@@ -21,10 +22,22 @@ class CircleIconButton extends JButton
 
 	private final Color fill;
 	private final String glyph;
+	private final BufferedImage image;
 
 	CircleIconButton(String glyph, Color fill, String tooltip)
 	{
+		this(glyph, null, fill, tooltip);
+	}
+
+	CircleIconButton(BufferedImage image, Color fill, String tooltip)
+	{
+		this(null, image, fill, tooltip);
+	}
+
+	private CircleIconButton(String glyph, BufferedImage image, Color fill, String tooltip)
+	{
 		this.glyph = glyph;
+		this.image = image;
 		this.fill = fill;
 		setToolTipText(tooltip);
 		setPreferredSize(new Dimension(DIAMETER, DIAMETER));
@@ -39,6 +52,7 @@ class CircleIconButton extends JButton
 	{
 		Graphics2D g2 = (Graphics2D) g.create();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
 		Color bg = getModel().isPressed() ? fill.darker() : getModel().isRollover() ? fill.brighter() : fill;
 		g2.setColor(bg);
@@ -46,11 +60,20 @@ class CircleIconButton extends JButton
 		g2.setColor(CatastrophicTheme.CARD_BORDER);
 		g2.draw(new Ellipse2D.Float(0, 0, DIAMETER - 1, DIAMETER - 1));
 
-		g2.setColor(CatastrophicTheme.TEXT);
-		g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18));
-		int textWidth = g2.getFontMetrics().stringWidth(glyph);
-		int textHeight = g2.getFontMetrics().getAscent();
-		g2.drawString(glyph, (DIAMETER - textWidth) / 2f, (DIAMETER + textHeight) / 2f - 3);
+		if (image != null)
+		{
+			int w = image.getWidth();
+			int h = image.getHeight();
+			g2.drawImage(image, (DIAMETER - w) / 2, (DIAMETER - h) / 2, w, h, null);
+		}
+		else
+		{
+			g2.setColor(CatastrophicTheme.TEXT);
+			g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 18));
+			int textWidth = g2.getFontMetrics().stringWidth(glyph);
+			int textHeight = g2.getFontMetrics().getAscent();
+			g2.drawString(glyph, (DIAMETER - textWidth) / 2f, (DIAMETER + textHeight) / 2f - 3);
+		}
 
 		g2.dispose();
 	}

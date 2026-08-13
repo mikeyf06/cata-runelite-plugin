@@ -21,6 +21,14 @@ public class EventDto
 	@SerializedName("discord_channel_id")
 	private String discordChannelId;
 
+	@SerializedName("host_discord_id")
+	private String hostDiscordId;
+
+	@SerializedName("discord_voice_channel_id")
+	private String discordVoiceChannelId;
+
+	private Integer world;
+
 	private Attendance attendance;
 
 	public boolean isSignedUp()

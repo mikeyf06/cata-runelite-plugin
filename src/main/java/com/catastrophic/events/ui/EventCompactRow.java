@@ -20,7 +20,7 @@ class EventCompactRow extends RoundedPanel
 
 	EventCompactRow(EventDto event, Consumer<JButton> onJoinClicked)
 	{
-		super(10, CatastrophicTheme.CARD_BACKGROUND, CatastrophicTheme.CARD_BORDER);
+		super(10, CatastrophicTheme.CARD_BACKGROUND, CatastrophicTheme.CARD_BORDER, true);
 		setLayout(new BorderLayout(CatastrophicTheme.SPACE_SM, 0));
 		setBorder(BorderFactory.createEmptyBorder(
 			CatastrophicTheme.SPACE_MD, CatastrophicTheme.SPACE_MD, CatastrophicTheme.SPACE_MD, CatastrophicTheme.SPACE_SM));
@@ -57,7 +57,8 @@ class EventCompactRow extends RoundedPanel
 
 	private static String subtitleText(EventDto event)
 	{
-		// No host field in the events API yet - once catabot-web exposes host_discord_id, prefix it here.
+		// event.getHostDiscordId() is now populated by the API, but it's a raw Discord ID with
+		// no username to display - prefix it here once the API can resolve/include a display name.
 		return formatTime(event);
 	}
 

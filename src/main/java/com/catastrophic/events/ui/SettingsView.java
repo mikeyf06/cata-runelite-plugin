@@ -2,6 +2,8 @@ package com.catastrophic.events.ui;
 
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -22,14 +24,8 @@ class SettingsView extends JPanel
 		setBorder(BorderFactory.createEmptyBorder(8, 4, 4, 4));
 
 		JTextField tokenField = field(configManager.getConfiguration(CONFIG_GROUP, "token"));
-		JTextField apiBaseField = field(configManager.getConfiguration(CONFIG_GROUP, "apiBase"));
-		JTextField websiteBaseField = field(configManager.getConfiguration(CONFIG_GROUP, "websiteBase"));
-		JTextField guildIdField = field(configManager.getConfiguration(CONFIG_GROUP, "guildId"));
 
 		add(fieldRow("Plugin token", tokenField));
-		add(fieldRow("Plugin API base URL (bot)", apiBaseField));
-		add(fieldRow("Website base URL", websiteBaseField));
-		add(fieldRow("Discord server ID", guildIdField));
 		add(Box.createRigidArea(new Dimension(0, 6)));
 
 		StyledButton saveButton = StyledButton.pill("Save", CatastrophicTheme.GOLD, CatastrophicTheme.BACKGROUND);
@@ -39,9 +35,6 @@ class SettingsView extends JPanel
 		saveButton.addActionListener(e ->
 		{
 			configManager.setConfiguration(CONFIG_GROUP, "token", tokenField.getText().trim());
-			configManager.setConfiguration(CONFIG_GROUP, "apiBase", apiBaseField.getText().trim());
-			configManager.setConfiguration(CONFIG_GROUP, "websiteBase", websiteBaseField.getText().trim());
-			configManager.setConfiguration(CONFIG_GROUP, "guildId", guildIdField.getText().trim());
 			onSaved.run();
 		});
 		add(saveButton);
@@ -75,6 +68,20 @@ class SettingsView extends JPanel
 		field.setForeground(CatastrophicTheme.TEXT);
 		field.setCaretColor(CatastrophicTheme.TEXT);
 		field.setBorder(BorderFactory.createLineBorder(CatastrophicTheme.CARD_BORDER));
+		field.addFocusListener(new FocusAdapter()
+		{
+			@Override
+			public void focusGained(FocusEvent e)
+			{
+				field.setBorder(BorderFactory.createLineBorder(CatastrophicTheme.GOLD));
+			}
+
+			@Override
+			public void focusLost(FocusEvent e)
+			{
+				field.setBorder(BorderFactory.createLineBorder(CatastrophicTheme.CARD_BORDER));
+			}
+		});
 		return field;
 	}
 }

@@ -20,6 +20,7 @@ import okhttp3.ResponseBody;
 public class EventsApiClient
 {
 	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+	private static final String API_BASE = "https://catabot-production.up.railway.app";
 
 	private final OkHttpClient httpClient;
 	private final Gson gson;
@@ -31,21 +32,21 @@ public class EventsApiClient
 		this.gson = gson;
 	}
 
-	public void fetchEvents(String apiBase, String token, ApiCallback<EventsResponse> callback)
+	public void fetchEvents(String token, ApiCallback<EventsResponse> callback)
 	{
 		Request request = new Request.Builder()
-			.url(apiBase + "/events")
+			.url(API_BASE + "/events")
 			.header("Authorization", "Bearer " + token)
 			.build();
 
 		enqueue(request, EventsResponse.class, callback);
 	}
 
-	public void signup(String apiBase, String token, String eventId, ApiCallback<SignupResponse> callback)
+	public void signup(String token, String eventId, ApiCallback<SignupResponse> callback)
 	{
 		RequestBody body = RequestBody.create(JSON, gson.toJson(new SignupRequest(eventId)));
 		Request request = new Request.Builder()
-			.url(apiBase + "/signup")
+			.url(API_BASE + "/signup")
 			.header("Authorization", "Bearer " + token)
 			.post(body)
 			.build();

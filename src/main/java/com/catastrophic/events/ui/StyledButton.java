@@ -33,8 +33,11 @@ class StyledButton extends JButton
 	{
 		super(text);
 		this.fill = fill;
-		this.fillHover = brighten(fill, 20);
-		this.fillPressed = brighten(fill, -20);
+		// Brightening an already-bright fill (e.g. the gold pill buttons) barely reads as feedback,
+		// so bright fills darken on hover/press instead - whichever direction actually shows.
+		int direction = luminance(fill) > 140 ? -1 : 1;
+		this.fillHover = brighten(fill, direction * 24);
+		this.fillPressed = brighten(fill, direction * 44);
 		this.outline = outline;
 		this.arc = arc;
 
@@ -84,5 +87,10 @@ class StyledButton extends JButton
 	private static int clamp(int v)
 	{
 		return Math.max(0, Math.min(255, v));
+	}
+
+	private static int luminance(Color c)
+	{
+		return (int) (0.299 * c.getRed() + 0.587 * c.getGreen() + 0.114 * c.getBlue());
 	}
 }

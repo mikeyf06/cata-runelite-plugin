@@ -1,6 +1,7 @@
 package com.catastrophic.events.ui;
 
 import com.catastrophic.events.CatastrophicEventsConfig;
+import com.catastrophic.events.CatastrophicEventsPlugin;
 import com.catastrophic.events.api.dto.EventDto;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -9,6 +10,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.image.BufferedImage;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -25,6 +28,7 @@ import javax.swing.SwingConstants;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.util.ImageUtil;
 
 @Slf4j
 public class CatastrophicEventsPanel extends PluginPanel
@@ -114,6 +118,12 @@ public class CatastrophicEventsPanel extends PluginPanel
 		header.setOpaque(false);
 		header.setBorder(BorderFactory.createEmptyBorder(
 			CatastrophicTheme.SPACE_MD, CatastrophicTheme.SPACE_XS, CatastrophicTheme.SPACE_MD, CatastrophicTheme.SPACE_XS));
+
+		BufferedImage logoImage = ImageUtil.loadImageResource(com.catastrophic.events.CatastrophicEventsPlugin.class, "icon.png");
+		JLabel logo = new JLabel(new ImageIcon(logoImage));
+		logo.setAlignmentX(Component.CENTER_ALIGNMENT);
+		header.add(logo);
+		header.add(Box.createRigidArea(new Dimension(0, CatastrophicTheme.SPACE_XS)));
 
 		JLabel title = new JLabel("Catastrophic Events");
 		title.setFont(CatastrophicTheme.titleFont());
@@ -238,7 +248,7 @@ public class CatastrophicEventsPanel extends PluginPanel
 		}
 
 		EventDto featured = joined.get(0);
-		EventHeroCard hero = new EventHeroCard(featured, config.websiteBase(), button -> joinHandler.accept(featured, button));
+		EventHeroCard hero = new EventHeroCard(featured, button -> joinHandler.accept(featured, button));
 		hero.setAlignmentX(Component.LEFT_ALIGNMENT);
 		column.add(hero);
 
@@ -266,7 +276,8 @@ public class CatastrophicEventsPanel extends PluginPanel
 		row.setOpaque(false);
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		CircleIconButton discord = new CircleIconButton("D", CatastrophicTheme.DISCORD_BLURPLE, "Open Discord");
+		BufferedImage discordIcon = ImageUtil.loadImageResource(com.catastrophic.events.CatastrophicEventsPlugin.class, "discord-icon.png");
+		CircleIconButton discord = new CircleIconButton(discordIcon, CatastrophicTheme.DISCORD_BLURPLE, "Open Discord");
 		discord.addActionListener(e -> openDiscordServer());
 		row.add(discord);
 
@@ -286,14 +297,9 @@ public class CatastrophicEventsPanel extends PluginPanel
 
 	private void openDiscordServer()
 	{
-		String guildId = config.guildId();
-		if (guildId == null || guildId.isEmpty())
-		{
-			return;
-		}
 		try
 		{
-			Desktop.getDesktop().browse(new URI("https://discord.com/channels/" + guildId));
+			Desktop.getDesktop().browse(new URI("https://discord.com/channels/" + CatastrophicEventsPlugin.DISCORD_GUILD_ID));
 		}
 		catch (Exception ex)
 		{

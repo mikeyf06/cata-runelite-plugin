@@ -3,15 +3,15 @@
 RuneLite side-panel plugin for the Catastrophic Events clan tooling. Talks to the
 **bot's** plugin-facing HTTP API (`catabot/src/http/server.ts`, listening on
 `PLUGIN_API_PORT`, default `8080`) — the website (`catabot-web`) previously hosted
-this API but that's being removed; the website is now only used for the "View
-Event" link. See [`poc-runelite-plugin.md`](poc-runelite-plugin.md) for the
-original scope/design doc (written when the website still hosted the API — the
-endpoint paths there are stale, see below).
+this API but that's being removed. The plugin doesn't link out to the website at
+all. See [`poc-runelite-plugin.md`](poc-runelite-plugin.md) for the original
+scope/design doc (written when the website still hosted the API — the endpoint
+paths there are stale, see below).
 
 ## What's implemented
 
-- Config panel: plugin token (secret field), plugin API base URL (bot), website
-  base URL (for the View Event link only), Discord server ID
+- Config panel: plugin token (secret field), plugin API base URL (bot),
+  Discord server ID
 - Poll loop (45s) hitting `GET {apiBase}/events`
 - Side panel: not-linked state, connection-error state, All Events / My Events
   tabs, a featured "hero" card for the soonest joined event, compact rows for
@@ -80,10 +80,8 @@ real event data, including the Join flow.
    (`PLUGIN_API_PORT`, default `8080`).
 5. In the running client: open the plugin's panel, click the gear icon
    ("Event Setup"), set **Plugin API base URL** to wherever the bot is running
-   (defaults to `http://localhost:8080`), **Website base URL** to wherever
-   `catabot-web` is running (defaults to `http://localhost:3000`), and paste a
-   token obtained via the bot's `!link` command (or the bot's
-   `/internal`-equivalent link issuance, if that's how tokens are minted now).
+   (defaults to `http://localhost:8080`), and paste a token obtained via the
+   bot's `!link <rsn>` command.
 
 ## Known gaps / things to confirm against the live API
 

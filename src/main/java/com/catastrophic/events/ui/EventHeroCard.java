@@ -1,5 +1,6 @@
 package com.catastrophic.events.ui;
 
+import com.catastrophic.events.CatastrophicEventsPlugin;
 import com.catastrophic.events.api.dto.EventDto;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -28,7 +29,7 @@ class EventHeroCard extends RoundedPanel
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a z");
 	private static final int STARTING_SOON_THRESHOLD_MINUTES = 60;
 
-	EventHeroCard(EventDto event, String websiteBase, Consumer<JButton> onJoinClicked)
+	EventHeroCard(EventDto event, Consumer<JButton> onJoinClicked)
 	{
 		super(14, CatastrophicTheme.CARD_BACKGROUND, CatastrophicTheme.CARD_BORDER);
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -38,20 +39,22 @@ class EventHeroCard extends RoundedPanel
 		add(header(event));
 		add(gap(CatastrophicTheme.SPACE_MD));
 		add(countdown(event));
+		add(gap(CatastrophicTheme.SPACE_XS));
 		add(separator());
-		add(infoRow("Time", formatTime(event)));
-		add(infoRow("World", "Not set by host yet"));
+		add(gap(CatastrophicTheme.SPACE_XS));
+		add(infoRow(RowIcon.Type.CLOCK, "Time", formatTime(event)));
+		add(infoRow(RowIcon.Type.WORLD, "World", worldText(event)));
+		add(gap(CatastrophicTheme.SPACE_XS));
 		add(separator());
-		add(infoRow("Attendance", attendanceText(event)));
+		add(gap(CatastrophicTheme.SPACE_XS));
+		add(infoRow(RowIcon.Type.PEOPLE, "Attendance", attendanceText(event)));
 		add(featureRow("Auto check-in", "Coming soon", false));
 		add(featureRow("Drop screenshots", "Coming soon", false));
 		add(featureRow("Notifications", "Joined events only", true));
 		add(gap(CatastrophicTheme.SPACE_MD));
 		add(joinButtonRow(event, onJoinClicked));
 		add(gap(CatastrophicTheme.SPACE_SM));
-		add(featureRow("Discord Voice", "Coming soon", false));
-		add(gap(CatastrophicTheme.SPACE_SM));
-		add(viewEventButton(event, websiteBase));
+		add(discordVoiceRow(event));
 	}
 
 	private static Component gap(int height)
@@ -91,14 +94,16 @@ class EventHeroCard extends RoundedPanel
 
 	private JPanel countdown(EventDto event)
 	{
-		JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		JPanel row = new JPanel(new BorderLayout(CatastrophicTheme.SPACE_XS, 0));
 		row.setOpaque(false);
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-		JLabel text = new JLabel(countdownText(event));
-		text.setFont(CatastrophicTheme.heroCountdownFont());
-		text.setForeground(CatastrophicTheme.GOLD);
-		row.add(text);
+		JLabel icon = new JLabel(new RowIcon(RowIcon.Type.CLOCK, 20));
+		row.add(icon, BorderLayout.WEST);
+
+		WrappingLabel text = new WrappingLabel(countdownText(event), CatastrophicTheme.heroCountdownFont(), CatastrophicTheme.GOLD);
+		text.setSize(new Dimension(150, Short.MAX_VALUE));
+		row.add(text, BorderLayout.CENTER);
 		return row;
 	}
 
@@ -122,48 +127,82 @@ class EventHeroCard extends RoundedPanel
 		return wrap;
 	}
 
-	private JPanel viewEventButton(EventDto event, String websiteBase)
-	{
-		StyledButton button = StyledButton.outlined("View Event", CatastrophicTheme.GOLD, CatastrophicTheme.CARD_BORDER, 8);
-		button.setMinimumSize(new Dimension(10, 32));
-		button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-		button.addActionListener(e -> openEventPage(websiteBase, event.getId()));
-
-		JPanel wrap = new JPanel(new BorderLayout());
-		wrap.setOpaque(false);
-		wrap.setAlignmentX(Component.LEFT_ALIGNMENT);
-		wrap.add(button, BorderLayout.CENTER);
-		return wrap;
-	}
-
-	private static void openEventPage(String websiteBase, String eventId)
-	{
-		try
-		{
-			Desktop.getDesktop().browse(new URI(websiteBase + "/events/" + eventId));
-		}
-		catch (Exception ex)
-		{
-			log.warn("Failed to open event page", ex);
-		}
-	}
-
-	private static JPanel infoRow(String label, String value)
-	{
-		return infoRow(label, value, CatastrophicTheme.TEXT);
-	}
-
-	private static JPanel infoRow(String label, String value, Color valueColor)
+	private JPanel discordVoiceRow(EventDto event)
 	{
 		JPanel row = new JPanel(new BorderLayout());
 		row.setOpaque(false);
 		row.setAlignmentX(Component.LEFT_ALIGNMENT);
-		row.setBorder(BorderFactory.createEmptyBorder(CatastrophicTheme.SPACE_XS, 0, CatastrophicTheme.SPACE_XS, 0));
+		row.setBorder(BorderFactory.createEmptyBorder(CatastrophicTheme.SPACE_SM, 0, CatastrophicTheme.SPACE_SM, 0));
+
+		JLabel labelComponent = new JLabel("Discord Voice");
+		labelComponent.setFont(CatastrophicTheme.smallFont());
+		labelComponent.setForeground(CatastrophicTheme.TEXT_DIM);
+		row.add(labelComponent, BorderLayout.WEST);
+
+		String voiceChannelId = event.getDiscordVoiceChannelId();
+		boolean canJoin = voiceChannelId != null && !voiceChannelId.isEmpty();
+
+		if (canJoin)
+		{
+			StyledButton joinVc = StyledButton.outlined("Join VC", CatastrophicTheme.DISCORD_BLURPLE,
+				CatastrophicTheme.DISCORD_BLURPLE, 999);
+			joinVc.addActionListener(e -> openVoiceChannel(voiceChannelId));
+			row.add(joinVc, BorderLayout.EAST);
+		}
+		else
+		{
+			JLabel notSet = new JLabel("Not set");
+			notSet.setFont(CatastrophicTheme.smallFont());
+			notSet.setForeground(CatastrophicTheme.TEXT_DISABLED);
+			row.add(notSet, BorderLayout.EAST);
+		}
+
+		return row;
+	}
+
+	private static void openVoiceChannel(String voiceChannelId)
+	{
+		try
+		{
+			Desktop.getDesktop().browse(new URI("https://discord.com/channels/" + CatastrophicEventsPlugin.DISCORD_GUILD_ID + "/" + voiceChannelId));
+		}
+		catch (Exception ex)
+		{
+			log.warn("Failed to open Discord voice channel", ex);
+		}
+	}
+
+	private static String worldText(EventDto event)
+	{
+		Integer world = event.getWorld();
+		return world == null ? "Not set by host yet" : "W" + world;
+	}
+
+	private static JPanel infoRow(RowIcon.Type icon, String label, String value)
+	{
+		return infoRow(icon, label, value, CatastrophicTheme.TEXT);
+	}
+
+	private static JPanel infoRow(RowIcon.Type icon, String label, String value, Color valueColor)
+	{
+		JPanel row = new JPanel(new BorderLayout());
+		row.setOpaque(false);
+		row.setAlignmentX(Component.LEFT_ALIGNMENT);
+		row.setBorder(BorderFactory.createEmptyBorder(CatastrophicTheme.SPACE_SM, 0, CatastrophicTheme.SPACE_SM, 0));
+
+		JPanel labelWrap = new JPanel(new FlowLayout(FlowLayout.LEFT, CatastrophicTheme.SPACE_XS, 0));
+		labelWrap.setOpaque(false);
+
+		if (icon != null)
+		{
+			labelWrap.add(new JLabel(new RowIcon(icon, 13)));
+		}
 
 		JLabel labelComponent = new JLabel(label);
 		labelComponent.setFont(CatastrophicTheme.smallFont());
 		labelComponent.setForeground(CatastrophicTheme.TEXT_DIM);
-		row.add(labelComponent, BorderLayout.WEST);
+		labelWrap.add(labelComponent);
+		row.add(labelWrap, BorderLayout.WEST);
 
 		JLabel valueComponent = new JLabel(value);
 		valueComponent.setFont(CatastrophicTheme.smallFont());
@@ -175,7 +214,7 @@ class EventHeroCard extends RoundedPanel
 	private static JPanel featureRow(String label, String status, boolean available)
 	{
 		String display = available ? status + " ✓" : status;
-		return infoRow(label, display, available ? CatastrophicTheme.GREEN : CatastrophicTheme.TEXT_DISABLED);
+		return infoRow(null, label, display, available ? CatastrophicTheme.GREEN : CatastrophicTheme.TEXT_DISABLED);
 	}
 
 	private static JSeparator separator()

@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.swing.JButton;
 import javax.swing.SwingUtilities;
@@ -41,6 +42,7 @@ public class CatastrophicEventsPlugin extends Plugin
 {
 	private static final int POLL_INTERVAL_SECONDS = 45;
 	private static final int[] REMINDER_MILESTONES_MINUTES = {180, 60, 5};
+	public static final String DISCORD_GUILD_ID = "703371593937584198";
 
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -67,6 +69,9 @@ public class CatastrophicEventsPlugin extends Plugin
 	// dedupe key: "eventId:milestone" - a reminder fires once per event+milestone, not every poll cycle
 	private final Set<String> remindersShown = ConcurrentHashMap.newKeySet();
 
+	// Fires the "here's what you're signed up for" summary once per client session, on the first successful poll.
+	private final AtomicBoolean announcedThisSession = new AtomicBoolean(false);
+
 	@Provides
 	CatastrophicEventsConfig provideConfig(ConfigManager configManager)
 	{
@@ -88,6 +93,7 @@ public class CatastrophicEventsPlugin extends Plugin
 		clientToolbar.addNavigation(navButton);
 
 		remindersShown.clear();
+		announcedThisSession.set(false);
 		pollTask = executor.scheduleWithFixedDelay(this::pollEvents, 0, POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
 	}
 
@@ -112,7 +118,7 @@ public class CatastrophicEventsPlugin extends Plugin
 			return;
 		}
 
-		apiClient.fetchEvents(config.apiBase(), token, new ApiCallback<EventsResponse>()
+		apiClient.fetchEvents(token, new ApiCallback<EventsResponse>()
 		{
 			@Override
 			public void onSuccess(EventsResponse result)
@@ -120,6 +126,10 @@ public class CatastrophicEventsPlugin extends Plugin
 				List<EventDto> events = result.getEvents() == null ? Collections.emptyList() : result.getEvents();
 				SwingUtilities.invokeLater(() -> panel.showEvents(events));
 				checkReminderMilestones(events);
+				if (announcedThisSession.compareAndSet(false, true))
+				{
+					announceSignedUpEvents(events);
+				}
 			}
 
 			@Override
@@ -149,7 +159,7 @@ public class CatastrophicEventsPlugin extends Plugin
 		joinButton.setEnabled(false);
 		joinButton.setText("Joining...");
 
-		apiClient.signup(config.apiBase(), token, event.getId(), new ApiCallback<SignupResponse>()
+		apiClient.signup(token, event.getId(), new ApiCallback<SignupResponse>()
 		{
 			@Override
 			public void onSuccess(SignupResponse result)
@@ -214,11 +224,58 @@ public class CatastrophicEventsPlugin extends Plugin
 		String text = milestoneMinutes >= 60
 			? String.format("%s starts in %d hour(s)", event.getTitle(), milestoneMinutes / 60)
 			: String.format("%s starts in %d min", event.getTitle(), milestoneMinutes);
+		sendClientMessage(text);
+	}
 
+	/** One-time "here's what you're signed up for" summary, one chat message per event, fired once per session. */
+	private void announceSignedUpEvents(List<EventDto> events)
+	{
+		for (EventDto event : events)
+		{
+			if (!event.isSignedUp())
+			{
+				continue;
+			}
+
+			long minutesUntil;
+			try
+			{
+				minutesUntil = event.minutesUntilStart();
+			}
+			catch (Exception e)
+			{
+				continue;
+			}
+
+			if (minutesUntil < 0)
+			{
+				continue;
+			}
+
+			sendClientMessage(String.format("%s starts in %s", event.getTitle(), formatDuration(minutesUntil)));
+		}
+	}
+
+	private static String formatDuration(long minutes)
+	{
+		if (minutes < 60)
+		{
+			return minutes + " min";
+		}
+		long hours = minutes / 60;
+		if (hours < 24)
+		{
+			return hours + "h " + (minutes % 60) + "m";
+		}
+		return (hours / 24) + "d " + (hours % 24) + "h";
+	}
+
+	private void sendClientMessage(String text)
+	{
 		chatMessageManager.queue(QueuedMessage.builder()
 			.type(ChatMessageType.CONSOLE)
 			.sender("Catastrophic Events")
-			.runeLiteFormattedMessage(text)
+			.runeLiteFormattedMessage("[Catastrophic Events] : " + text)
 			.build());
 	}
 }

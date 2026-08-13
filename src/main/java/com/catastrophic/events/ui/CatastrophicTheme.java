@@ -36,7 +36,7 @@ final class CatastrophicTheme
 
 	static Font heroCountdownFont()
 	{
-		return FontManager.getRunescapeBoldFont().deriveFont(26f);
+		return FontManager.getRunescapeBoldFont().deriveFont(20f);
 	}
 
 	static Font boldFont()
