@@ -10,18 +10,19 @@ paths there are stale, see below).
 
 ## What's implemented
 
-- Config panel: plugin token (secret field), plugin API base URL (bot),
-  Discord server ID
+- Config panel: plugin token (secret field), loot-sharing and
+  death-screenshot toggles (both opt-in), a custom death message field
 - Poll loop (45s) hitting `GET {apiBase}/events`
 - Side panel: not-linked state, connection-error state, All Events / My Events
   tabs, a featured "hero" card for the soonest joined event, compact rows for
   everything else
 - Join button → `POST {apiBase}/signup`, updates in place on success/failure
-- Discord deep-link button per event, and a general "open Discord server" footer
-  button (both need `guildId` configured)
+- Discord deep-link button per event, and a general "open Discord server"
+  footer button, both using a hardcoded guild ID (`DISCORD_GUILD_ID` in
+  `CatastrophicEventsPlugin.java`) - not user-configurable
 - Private chatbox reminders at T-3h / T-1h / T-5min, deduped per event+milestone
-- Inline "Event Setup" view (gear icon) for editing config without leaving the
-  panel — writes straight to `ConfigManager`
+- Inline "Event Setup" view (gear icon) for editing the plugin token without
+  leaving the panel — writes straight to `ConfigManager`
 - Discord alerts: loot sharing, death screenshots, and clan coffer activity —
   see "Discord alerts" below
 
@@ -108,19 +109,21 @@ real event data, including the Join flow.
    only works launching this way, not through the Jagex Launcher; see
    `Using Jagex Accounts` on the RuneLite wiki for the `--insecure-write-credentials`
    bridge if you need to test logged in as a real Jagex account.
-4. Make sure `catabot` is running locally with its plugin API enabled
-   (`PLUGIN_API_PORT`, default `8080`).
+4. `EventsApiClient`/`AlertsApiClient` hardcode the production `catabot` URL
+   (`https://catabot-production.up.railway.app`) - there's no config field to
+   point the plugin at a local instance. To test against a local `catabot`
+   (`PLUGIN_API_PORT`, default `8080`), temporarily edit the `API_BASE`
+   constant in both files and revert before committing.
 5. In the running client: open the plugin's panel, click the gear icon
-   ("Event Setup"), set **Plugin API base URL** to wherever the bot is running
-   (defaults to `http://localhost:8080`), and paste a token obtained via the
-   bot's `!link <rsn>` command.
+   ("Event Setup"), and paste a token obtained via the bot's `!link <rsn>`
+   command.
 
 ## Known gaps / things to confirm against the live API
 
-- `guildId` config field isn't in the original POC skeleton — no endpoint
-  returns a guild ID, so the Discord deep-link URL
-  (`discord.com/channels/{guild}/{channel}`) needs it from somewhere. Added as
-  a config item rather than hardcoding a constant.
+- No endpoint returns a Discord guild ID, so the Discord deep-link URL
+  (`discord.com/channels/{guild}/{channel}`) uses a hardcoded constant
+  (`DISCORD_GUILD_ID`) rather than a config item - fine for this single clan's
+  plugin, but not something another server could reuse without a source change.
 - No `host` field in the events response yet (bot's `Event` model has
   `hostDiscordId`, but `GET /events` doesn't return it) — both card styles
   drop the "Host" row rather than show nothing/fake data.
