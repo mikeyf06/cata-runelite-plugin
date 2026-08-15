@@ -1,5 +1,8 @@
 package com.catastrophic.events;
 
+import com.catastrophic.events.alerts.CofferAlertListener;
+import com.catastrophic.events.alerts.DeathAlertListener;
+import com.catastrophic.events.alerts.LootAlertListener;
 import com.catastrophic.events.api.ApiCallback;
 import com.catastrophic.events.api.ApiErrorType;
 import com.catastrophic.events.api.EventsApiClient;
@@ -26,6 +29,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -62,6 +66,18 @@ public class CatastrophicEventsPlugin extends Plugin
 	@Inject
 	private ConfigManager configManager;
 
+	@Inject
+	private EventBus eventBus;
+
+	@Inject
+	private LootAlertListener lootAlertListener;
+
+	@Inject
+	private DeathAlertListener deathAlertListener;
+
+	@Inject
+	private CofferAlertListener cofferAlertListener;
+
 	private CatastrophicEventsPanel panel;
 	private NavigationButton navButton;
 	private ScheduledFuture<?> pollTask;
@@ -92,6 +108,10 @@ public class CatastrophicEventsPlugin extends Plugin
 			.build();
 		clientToolbar.addNavigation(navButton);
 
+		eventBus.register(lootAlertListener);
+		eventBus.register(deathAlertListener);
+		eventBus.register(cofferAlertListener);
+
 		remindersShown.clear();
 		announcedThisSession.set(false);
 		pollTask = executor.scheduleWithFixedDelay(this::pollEvents, 0, POLL_INTERVAL_SECONDS, TimeUnit.SECONDS);
@@ -105,6 +125,9 @@ public class CatastrophicEventsPlugin extends Plugin
 			pollTask.cancel(true);
 			pollTask = null;
 		}
+		eventBus.unregister(lootAlertListener);
+		eventBus.unregister(deathAlertListener);
+		eventBus.unregister(cofferAlertListener);
 		clientToolbar.removeNavigation(navButton);
 		panel.destroy();
 	}
