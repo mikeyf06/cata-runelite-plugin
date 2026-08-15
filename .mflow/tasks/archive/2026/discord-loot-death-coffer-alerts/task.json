@@ -7,7 +7,7 @@
   },
   "task_id": "discord-loot-death-coffer-alerts",
   "track": "JDI",
-  "status": "deployed",
+  "status": "archived",
   "project_type": "personal",
   "branch": "feature/discord-loot-death-coffer-alerts",
   "request": {
@@ -46,11 +46,11 @@
     "notes": "No PR - direct merge (no gh CLI available, solo project with no staging branch or reviewers). Commit fdc8258 on feature/discord-loot-death-coffer-alerts, merged to main via --no-ff at 4a5ea5a, pushed to origin/main."
   },
   "archive": {
-    "archived_at": null,
-    "archive_path": null
+    "archived_at": "2026-08-14T22:35:00Z",
+    "archive_path": ".mflow/tasks/archive/2026/discord-loot-death-coffer-alerts/"
   },
   "timestamps": {
     "created_at": "2026-08-13T18:24:50Z",
-    "updated_at": "2026-08-14T22:10:00Z"
+    "updated_at": "2026-08-14T22:35:00Z"
   }
 }
