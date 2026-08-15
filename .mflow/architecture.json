@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "architecture",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-08-07T19:52:42Z"
+    "updated_at": "2026-08-14T22:25:00Z"
   },
   "pattern": "Single-plugin layered architecture following RuneLite's standard external-plugin shape: a Guice-injected Plugin class as orchestrator/controller, a dedicated HTTP API client layer, a Gson DTO layer mirroring the backend's JSON contract, and a Swing view layer (state-routed panel + presentational cards + a custom widget kit). Not MVC/MVVM in a strict sense - closer to a thin controller (the Plugin class) pushing state into a stateful, self-rendering View (CatastrophicEventsPanel).",
   "layers": [
@@ -20,7 +20,12 @@
     {
       "name": "API client",
       "path": "src/main/java/com/catastrophic/events/api/",
-      "responsibility": "EventsApiClient wraps OkHttp calls to the bot's plugin API (GET /events, POST /signup); ApiCallback<T> is the async result interface; ApiErrorType classifies failures (UNAUTHORIZED / NETWORK / SERVER) so callers can branch on cause"
+      "responsibility": "EventsApiClient wraps OkHttp calls to the bot's plugin API (GET /events, POST /signup); AlertsApiClient posts multipart/form-data (screenshot + summary) to POST /alerts; ApiCallback<T> is the async result interface; ApiErrorType classifies failures (UNAUTHORIZED / NETWORK / SERVER) so callers can branch on cause"
+    },
+    {
+      "name": "Alerts",
+      "path": "src/main/java/com/catastrophic/events/alerts/",
+      "responsibility": "Game-event listeners (@Subscribe on RuneLite's EventBus) that detect loot/death/clan-coffer moments client-side, capture a screenshot via DrawManager, and hand off to AlertsApiClient to post to Discord through catabot. Registered/unregistered in CatastrophicEventsPlugin's startUp()/shutDown()."
     },
     {
       "name": "DTOs",
@@ -43,7 +48,9 @@
     "Async callback interface for HTTP results (ApiCallback<T>), wrapping OkHttp's own Callback",
     "Explicit state machine driving a full re-render (CatastrophicEventsPanel.State enum; render() rebuilds the entire body panel on every state/tab change rather than diffing)",
     "DTO/contract isolation - api/dto package exists solely to mirror the bot's JSON shape, translated via Gson @SerializedName, kept separate from UI/domain logic",
-    "Composable custom Swing widget kit instead of the platform look-and-feel"
+    "Composable custom Swing widget kit instead of the platform look-and-feel",
+    "EventBus @Subscribe listeners for game-event-driven side effects (loot/death/chat), separate from the poll-loop-driven Plugin orchestrator",
+    "Multipart form POST (OkHttp MultipartBody) for image uploads - the first non-pure-JSON API client in the codebase (AlertsApiClient vs. EventsApiClient)"
   ],
   "key_decisions": [
     {
@@ -65,6 +72,16 @@
       "decision": "Auto check-in, drop-screenshot capture, join-VC, and LFC browsing are out of scope for this POC but shown as visible, disabled 'Coming soon' rows in the My Events hero card rather than hidden entirely",
       "reason": "The mocked-up design the panel was built against calls for them to be visible",
       "made_at": "2026-08-07 (per README 'What's implemented' section, first commit)"
+    },
+    {
+      "decision": "Discord alert delivery (loot/death/coffer) routes through catabot's POST /alerts endpoint, which owns the kind-to-channel-ID mapping server-side - the plugin never holds raw Discord channel IDs or webhook URLs for alerts",
+      "reason": "Keeps Discord bot credentials and channel routing server-side only, consistent with the existing architecture (catabot already hosts /events and /signup for this plugin)",
+      "made_at": "2026-08-13 (discord-loot-death-coffer-alerts, WL-2)"
+    },
+    {
+      "decision": "Loot sharing and death screenshots are individually toggleable and default off (opt-in); clan coffer activity alerts have no toggle and are always on",
+      "reason": "Loot/death alerts are personal player activity someone may not want shared, so opt-in is the safer default; coffer activity reflects clan-owned funds/business rather than personal activity, so there's less privacy rationale for an opt-out",
+      "made_at": "2026-08-13/14 (discord-loot-death-coffer-alerts, WL-1 and WL-9)"
     }
   ]
 }

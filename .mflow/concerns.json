@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "concerns",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-08-07T19:52:42Z"
+    "updated_at": "2026-08-14T22:25:00Z"
   },
   "tech_debt": [
     {
@@ -78,6 +78,11 @@
       "id": "WRN-004",
       "summary": "apiBase defaults to plain HTTP (http://localhost:8080) and nothing warns or blocks a user from pointing it at a non-local, non-TLS host - the Bearer token would then travel in cleartext.",
       "area": "CatastrophicEventsConfig.java, api/EventsApiClient.java"
+    },
+    {
+      "id": "WRN-005",
+      "summary": "AlertsApiClient duplicates EventsApiClient's 401/unsuccessful/network error-classification logic inline instead of sharing a helper (logged as an anticipated deviation, WL-5 on discord-loot-death-coffer-alerts) - a future change to that classification logic has to be made in two places or it'll silently drift.",
+      "area": "api/AlertsApiClient.java, api/EventsApiClient.java"
     }
   ],
   "dependencies_at_risk": [

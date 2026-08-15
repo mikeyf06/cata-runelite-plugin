@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "modules",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-08-07T19:57:47Z"
+    "updated_at": "2026-08-14T22:25:00Z"
   },
   "entry_points": [
     "src/main/java/com/catastrophic/events/CatastrophicEventsPlugin.java",
@@ -24,10 +24,11 @@
       "responsibility": "Guice-injected plugin lifecycle (startUp/shutDown), the 45s poll loop, reminder-milestone logic, and the user-facing config schema - the orchestrator that wires the API client's results into the panel's state.",
       "entry_points": ["CatastrophicEventsPlugin.java"],
       "key_files": [
-        { "file": "CatastrophicEventsPlugin.java", "purpose": "Plugin entrypoint: startUp/shutDown, poll loop scheduling (scheduleWithFixedDelay), join-button handler, reminder milestone dedupe (remindersShown set)." },
-        { "file": "CatastrophicEventsConfig.java", "purpose": "RuneLite ConfigGroup interface declaring token, apiBase, websiteBase, guildId settings with defaults." }
+        { "file": "CatastrophicEventsPlugin.java", "purpose": "Plugin entrypoint: startUp/shutDown, poll loop scheduling (scheduleWithFixedDelay), join-button handler, reminder milestone dedupe (remindersShown set), registers/unregisters the three alerts listeners with the EventBus." },
+        { "file": "CatastrophicEventsConfig.java", "purpose": "RuneLite ConfigGroup interface declaring token, lootSharingEnabled, deathScreenshotsEnabled (both default off/opt-in), and deathMessage (custom text, default blank) settings." }
       ],
       "depends_on": [
+        "src/main/java/com/catastrophic/events/alerts",
         "src/main/java/com/catastrophic/events/api",
         "src/main/java/com/catastrophic/events/api/dto",
         "src/main/java/com/catastrophic/events/ui"
@@ -45,6 +46,7 @@
       "entry_points": ["EventsApiClient.java"],
       "key_files": [
         { "file": "EventsApiClient.java", "purpose": "fetchEvents() and signup() - builds requests, attaches Bearer auth header, parses JSON responses via Gson, routes errors through ApiCallback." },
+        { "file": "AlertsApiClient.java", "purpose": "sendAlert() - posts multipart/form-data (kind, summary, image) to POST /alerts with the same Bearer auth pattern; has its own inline 401/unsuccessful/network handling rather than sharing EventsApiClient's (WRN-005)." },
         { "file": "ApiCallback.java", "purpose": "Generic async result interface (onSuccess/onError) used by all API calls." },
         { "file": "ApiErrorType.java", "purpose": "Enum classifying failures: UNAUTHORIZED (401), NETWORK (request never reached server), SERVER (unexpected status/malformed body)." }
       ],
@@ -52,9 +54,32 @@
         "src/main/java/com/catastrophic/events/api/dto"
       ],
       "depended_on_by": [
+        "src/main/java/com/catastrophic/events",
+        "src/main/java/com/catastrophic/events/alerts"
+      ],
+      "concerns": ["WRN-001", "WRN-004", "WRN-005"]
+    },
+    {
+      "name": "Alerts",
+      "path": "src/main/java/com/catastrophic/events/alerts",
+      "type": "service",
+      "responsibility": "Game-event listeners (@Subscribe on RuneLite's EventBus) that detect loot/death/clan-coffer moments client-side, capture a screenshot, and send it (plus a text summary) to AlertsApiClient for delivery to Discord via catabot.",
+      "entry_points": ["LootAlertListener.java", "DeathAlertListener.java", "CofferAlertListener.java"],
+      "key_files": [
+        { "file": "AlertKind.java", "purpose": "LOOT/DEATH/COFFER enum; wireValue() matches the bot's `kind` field." },
+        { "file": "ScreenshotCapture.java", "purpose": "Wraps DrawManager.requestNextFrameListener to capture the current client frame as PNG bytes via an async callback." },
+        { "file": "LootAlertListener.java", "purpose": "@Subscribe on NpcLootReceived/PlayerLootReceived; filters to non-stackable items worth >= 1.5m gp (ItemManager.getItemPrice); gated on config.lootSharingEnabled() (default off)." },
+        { "file": "DeathAlertListener.java", "purpose": "@Subscribe on ActorDeath, local player only; gated on config.deathScreenshotsEnabled() (default off); uses config.deathMessage() if set, else \"Died.\"" },
+        { "file": "CofferAlertListener.java", "purpose": "@Subscribe on ChatMessage (ChatMessageType.CLAN_MESSAGE only - the system-broadcast type, not player-typed CLAN_CHAT); regex-matches coffer deposit/withdraw text; always on, no config gate." }
+      ],
+      "depends_on": [
+        "src/main/java/com/catastrophic/events",
+        "src/main/java/com/catastrophic/events/api"
+      ],
+      "depended_on_by": [
         "src/main/java/com/catastrophic/events"
       ],
-      "concerns": ["WRN-001", "WRN-004"]
+      "concerns": []
     },
     {
       "name": "API DTOs",

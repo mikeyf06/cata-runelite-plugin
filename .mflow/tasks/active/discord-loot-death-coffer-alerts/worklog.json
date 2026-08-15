@@ -129,6 +129,17 @@
       "detail": "No open blockers. Definition of done confirmed: all plan steps complete plus WL-9/WL-10 deviations, conventions followed, no automated tests (consistent with this repo's existing TD-001 convention - manual QA is the accepted bar), no new concerns beyond what's logged here. Dev UAT: live end-to-end testing of loot/death/coffer alerts against production, and a second live pass confirming the opt-in defaults and the new Death message field render/behave correctly in RuneLite's native config panel. Both confirmed by the developer.",
       "related_step": null,
       "blocker": null
+    },
+    {
+      "entry_id": "WL-12",
+      "type": "note",
+      "timestamp": "2026-08-14T22:20:00Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Task shipped to production",
+      "detail": "No PR - gh CLI unavailable in this environment and this is a solo project with no staging branch or reviewers, so the developer chose a direct merge instead. Committed on feature/discord-loot-death-coffer-alerts (fdc8258), merged --no-ff into main (4a5ea5a), pushed to origin/main.",
+      "related_step": null,
+      "blocker": null
     }
   ]
 }
