@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "project_id": "cata-runelite-plugin",
+    "task_id": "discord-loot-death-coffer-alerts",
+    "session_id": "sess-20260813-195500",
+    "started_at": "2026-08-13T19:55:00Z",
+    "updated_at": "2026-08-13T20:05:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-1",
+      "type": "decision",
+      "timestamp": "2026-08-13T18:30:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Clan coffer activity alerts are always-on, no config checkbox.",
+      "detail": "Unlike loot sharing and death screenshots, which are individually toggleable per player, clan coffer deposit/withdraw alerts have no opt-out. Rationale: coffer activity reflects clan-owned funds and clan business, not personal player activity, so there's less privacy rationale for letting a player disable it.",
+      "related_step": null,
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-2",
+      "type": "decision",
+      "timestamp": "2026-08-13T18:30:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Screenshot/summary delivery routes through catabot's HTTP API, not raw Discord webhook URLs in plugin config.",
+      "detail": "A new upload endpoint will be added to catabot for the plugin to POST screenshots and summaries to, targeting a Discord channel ID. Rationale: keeps Discord bot credentials server-side only, consistent with the existing architecture where catabot already hosts /events and /signup for this plugin rather than the plugin talking to Discord directly.",
+      "related_step": null,
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-3",
+      "type": "note",
+      "timestamp": "2026-08-13T18:30:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Open item carried into planning: loot value detection mechanism and death-detection hook still need to be resolved.",
+      "detail": "Need to determine the exact mechanism for loot value detection (drop tracking + GE value lookup + non-stackable/non-currency filter, threshold 1.5m gp) and identify the death-detection hook available in the RuneLite client API. Resolve during plan-task.",
+      "related_step": null,
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-4",
+      "type": "note",
+      "timestamp": "2026-08-13T19:55:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Verified RuneLite API signatures against the locally cached client-1.12.35.jar / runelite-api-1.12.35.jar before writing any listener code.",
+      "detail": "Used javap against ~/.gradle/caches to confirm actual signatures rather than assuming: net.runelite.client.events.NpcLootReceived/PlayerLootReceived (not the loottracker-plugin-only LootReceived, which requires that separate plugin to be enabled), ActorDeath.getActor(), ChatMessage.getType()/getMessage() with ChatMessageType.CLAN_MESSAGE, DrawManager.requestNextFrameListener(Consumer<Image>), ImageUtil.bufferedImageFromImage(Image), ItemManager.getItemPrice(int)/getItemComposition(int), ItemComposition.isStackable(), and EventBus.register(Object)/unregister(Object).",
+      "related_step": "Steps 2-8",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-5",
+      "type": "deviation",
+      "timestamp": "2026-08-13T19:55:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "AlertsApiClient does not reuse EventsApiClient's private generic enqueue()/handleResponse() helper - it has its own response handling.",
+      "detail": "EventsApiClient's helper is JSON-response-specific (Gson.fromJson into a Class<T>), which doesn't fit a Void/no-body multipart response well. AlertsApiClient duplicates the same 401/unsuccessful/network error classification inline instead. Flagged per PLAN.md Step 4's anticipated deviation note. Also duplicates the API_BASE constant string rather than extracting a shared constant, matching EventsApiClient's existing self-contained-class style (no shared API-config class exists yet in this codebase).",
+      "related_step": "Step 4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-6",
+      "type": "note",
+      "timestamp": "2026-08-13T19:55:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "CofferAlertListener's chat-message detection (ChatMessageType.CLAN_MESSAGE + regex for \"coffer\" and \"deposit\"/\"withdr\") is an assumption, not verified against a live clan coffer transaction.",
+      "detail": "No test account/live game session was available during execution to trigger a real coffer deposit/withdraw and observe the exact chat type and wording. The regex is intentionally loose (matches on 'coffer' plus a deposit/withdraw verb stem) to tolerate wording variance, but the ChatMessageType itself (assumed CLAN_MESSAGE, the type used for clan broadcast/system messages) needs manual confirmation - see PLAN.md Step 10 manual QA.",
+      "related_step": "Step 7",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-7",
+      "type": "note",
+      "timestamp": "2026-08-13T20:05:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Step 10 QA: ran ./gradlew compileJava - builds clean, confirming all new RuneLite API usage compiles against client-1.12.35. Full in-game verification (loot/death/coffer firing correctly, both toggles gating correctly, and actual Discord delivery) could not be done in this session - no live RuneLite client/game session or working catabot /alerts endpoint available. Manual in-game QA and end-to-end delivery testing (once the companion catabot task lands) is still outstanding.",
+      "detail": "Verified: `.\\gradlew.bat compileJava` -> BUILD SUCCESSFUL. Also spot-checked indentation/brace style on the new alerts/ files (tabs, Allman braces) against conventions.json. Not verified: live NpcLootReceived/PlayerLootReceived/ActorDeath/ChatMessage firing behavior, the 1.5m/non-stackable filter against a real drop, the coffer regex against a real coffer transaction message, or actual message delivery to Discord (blocked on the catabot plugin-alerts-endpoint task).",
+      "related_step": "Step 10",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-8",
+      "type": "note",
+      "timestamp": "2026-08-14T22:00:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Companion catabot /alerts endpoint now exists (requirePluginToken-gated, kind-to-channel-ID mapping server-side per WL-2), unblocking end-to-end testing. Live-tested all three alert kinds against production catabot/Discord via ./gradlew run: loot (with VALUE_THRESHOLD_GP temporarily lowered to 1L to force a qualifying drop, then reverted to 1_500_000L), death (real in-client death), and coffer (real coffer transaction, confirming the ChatMessageType.CLAN_MESSAGE assumption from WL-6 was correct). All three posted successfully to their real Discord channels.",
+      "detail": "Also added rate limiting to catabot's HTTP API (all /events, /signup, /checkin, /alerts routes) as a related hardening pass ahead of a planned RuneLite Plugin Hub submission - tracked in catabot's own repo, not this task's scope.",
+      "related_step": "Step 10",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-9",
+      "type": "deviation",
+      "timestamp": "2026-08-14T22:05:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "lootSharingEnabled and deathScreenshotsEnabled now default to false (opt-in), not true as originally planned in Step 1 / WL's original plan text.",
+      "detail": "Post-live-test decision: default every player out of loot-sharing and death-screenshot alerts rather than auto-enrolling them, so sharing personal moments to a clan channel is something each player opts into rather than has to opt out of. Coffer alerts (WL-1, always-on) are unaffected - that decision stands as clan-owned activity, not personal.",
+      "related_step": "Step 1",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-10",
+      "type": "deviation",
+      "timestamp": "2026-08-14T22:05:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Added a new deathMessage config item (free-text) beyond the original plan's scope, letting players customize the text posted alongside their death screenshot (e.g. \"died being silly\") instead of the fixed \"Died.\" string.",
+      "detail": "New @ConfigItem String deathMessage (position 4, default \"\") on CatastrophicEventsConfig. DeathAlertListener uses it when non-blank, falling back to the original \"Died.\" literal otherwise. No server-side change needed - catabot already sends alert content with allowedMentions: { parse: [] }, so a free-text field can't be used to ping @everyone/roles.",
+      "related_step": "Step 6",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-11",
+      "type": "note",
+      "timestamp": "2026-08-14T22:10:00Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "No open blockers. Definition of done confirmed: all plan steps complete plus WL-9/WL-10 deviations, conventions followed, no automated tests (consistent with this repo's existing TD-001 convention - manual QA is the accepted bar), no new concerns beyond what's logged here. Dev UAT: live end-to-end testing of loot/death/coffer alerts against production, and a second live pass confirming the opt-in defaults and the new Death message field render/behave correctly in RuneLite's native config panel. Both confirmed by the developer.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

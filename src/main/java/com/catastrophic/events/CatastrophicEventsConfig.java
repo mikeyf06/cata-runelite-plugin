@@ -18,4 +18,37 @@ public interface CatastrophicEventsConfig extends Config
 	{
 		return "";
 	}
+
+	@ConfigItem(
+		position = 2,
+		keyName = "lootSharingEnabled",
+		name = "Share big loot drops",
+		description = "Post a screenshot and summary to Discord when you receive a non-stacked drop worth 1.5m gp or more."
+	)
+	default boolean lootSharingEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 3,
+		keyName = "deathScreenshotsEnabled",
+		name = "Share death screenshots",
+		description = "Post a screenshot to Discord whenever you die."
+	)
+	default boolean deathScreenshotsEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 4,
+		keyName = "deathMessage",
+		name = "Death message",
+		description = "Text posted alongside death alerts, e.g. \"died being silly\". Leave blank for the default \"Died.\""
+	)
+	default String deathMessage()
+	{
+		return "";
+	}
 }

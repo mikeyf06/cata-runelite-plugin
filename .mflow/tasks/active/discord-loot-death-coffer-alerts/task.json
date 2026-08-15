@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-08-14T22:10:00Z"
+  },
+  "task_id": "discord-loot-death-coffer-alerts",
+  "track": "JDI",
+  "status": "qa_review",
+  "project_type": "personal",
+  "branch": "feature/discord-loot-death-coffer-alerts",
+  "request": {
+    "summary": "Add three Discord-integration features (loot sharing, death screenshots, clan coffer activity) that capture screenshots/summaries client-side and route them through catabot's HTTP API to designated Discord channels, with loot sharing and death screenshots individually toggleable via config checkboxes and clan coffer activity always on.",
+    "submitted_at": "2026-08-13T18:24:50Z",
+    "raw_requirements": "So there are a few other plugin integrations we want to do.\n\n* Loot sharing - Share screenshots and summary of loot above 1.5m gp in value. Not stackable drops. Screenshot and summary dropped into a channel on discord. (I'll provide channel ID)\n* Death screenshots - Screenshot of when someone dies dropped into a channel on discord (I'll provide channel ID)\n* Clan coffer activity - When someone deposits, withdraws, etc, drop a screenshot of the chat into a specific channel (I'll provide channel ID)\n\n\nFor Loot sharing, and death screenshots (planking), i want these to be checkboxes for on or off, people don't need to have these turned on if they dont want to"
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Add a game-event listener layer that detects loot/death/coffer moments client-side, captures a screenshot via RuneLite's frame-capture API, and posts (image + text summary) through a new AlertsApiClient to a POST /alerts endpoint on catabot. Catabot owns the kind-to-channel-ID mapping server-side, so the plugin never holds raw channel IDs or webhook URLs - it just sends kind (loot/death/coffer) + summary + image. The companion catabot-side endpoint is out of scope for this task and is tracked separately in that repo's own .mflow project.",
+    "steps": [
+      "Step 1 - CatastrophicEventsConfig.java: add two @ConfigItem booleans, lootSharingEnabled (default true) and deathScreenshotsEnabled (default true), positioned after token. These render as native checkboxes in RuneLite's config panel. Coffer alerts get no config item (always on, per worklog decision WL-1).",
+      "Step 2 - New alerts/AlertKind.java enum with LOOT, DEATH, COFFER values.",
+      "Step 3 - New alerts/ScreenshotCapture.java wrapping RuneLite's DrawManager.requestNextFrameListener(...) to capture the current client frame as a PNG byte array via an async callback.",
+      "Step 4 - New api/AlertsApiClient.java: sendAlert(String token, AlertKind kind, String summary, byte[] pngBytes, ApiCallback<Void>) posting multipart/form-data (fields: kind, summary, image) to {API_BASE}/alerts with the existing Bearer auth header pattern from EventsApiClient. First multipart usage in this codebase (existing client is pure-JSON) - built with OkHttp MultipartBody.Builder; log a deviation note if this diverges from EventsApiClient conventions during execution.",
+      "Step 5 - New alerts/LootAlertListener.java: @Subscribe on RuneLite's loot-received event, iterate received items, filter to !ItemComposition.isStackable() items whose single-unit GE value (ItemManager.getItemPrice) is >= 1,500,000 gp, gated on config.lootSharingEnabled(), build a text summary (player, item, quantity, value, source), capture screenshot via ScreenshotCapture, send via AlertsApiClient with kind=LOOT.",
+      "Step 6 - New alerts/DeathAlertListener.java: @Subscribe on ActorDeath filtered to the local player, gated on config.deathScreenshotsEnabled(), capture screenshot, send via AlertsApiClient with kind=DEATH.",
+      "Step 7 - New alerts/CofferAlertListener.java: @Subscribe on ChatMessage, regex-match clan coffer deposit/withdraw text, always active (no config gate per WL-1), capture screenshot of the chat, send via AlertsApiClient with kind=COFFER.",
+      "Step 8 - CatastrophicEventsPlugin.java: inject EventBus, construct the three listeners plus ScreenshotCapture and AlertsApiClient, register listeners with eventBus.register(...) in startUp() and eventBus.unregister(...) in shutDown().",
+      "Step 9 - Update README.md with the new config options (lootSharingEnabled, deathScreenshotsEnabled) and a description of all three alert features, following the existing docs convention.",
+      "Step 10 - Manual QA pass via ./gradlew run per Definition of Done - no CI exists in this repo. Verify each listener fires correctly, the 1.5m/non-stackable filter behaves as expected, and both toggles gate their respective features. End-to-end Discord delivery is blocked on the companion catabot task and can only be smoke-tested once that endpoint exists (or stubbed locally against a dev catabot instance)."
+    ],
+    "planned_at": "2026-08-13T18:50:00Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-08-14T22:10:00Z",
+    "notes": "All 10 plan steps complete, plus two post-plan deviations (WL-9: opt-in defaults for loot/death toggles, WL-10: new deathMessage config field). Live end-to-end tested against production catabot/Discord for all three alert kinds, and a second pass confirming the new config panel fields. No open blockers, no new concerns.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-08-13T18:24:50Z",
+    "updated_at": "2026-08-14T22:10:00Z"
+  }
+}

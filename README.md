@@ -22,11 +22,37 @@ paths there are stale, see below).
 - Private chatbox reminders at T-3h / T-1h / T-5min, deduped per event+milestone
 - Inline "Event Setup" view (gear icon) for editing config without leaving the
   panel — writes straight to `ConfigManager`
+- Discord alerts: loot sharing, death screenshots, and clan coffer activity —
+  see "Discord alerts" below
 
-Out of scope for this POC (see `poc-runelite-plugin.md`): auto check-in, screenshot
-capture, join-VC button, LFC browsing, `!cevents` rendering. These are represented
+Out of scope for this POC (see `poc-runelite-plugin.md`): auto check-in,
+join-VC button, LFC browsing, `!cevents` rendering. These are represented
 in the "My Events" hero card as visible-but-disabled rows ("Coming soon"), not
 hidden, since the mocked-up design calls for them.
+
+## Discord alerts
+
+The plugin posts a screenshot (and, for loot/coffer, a text summary) to
+Discord for three kinds of moments, via a new `POST {apiBase}/alerts`
+endpoint on the bot (see `alerts/` and `api/AlertsApiClient.java`). The
+plugin never holds Discord channel IDs or webhook URLs — the bot maps
+`kind` (`loot`/`death`/`coffer`) to a channel on its own side.
+
+- **Loot sharing** — fires on any single non-stackable item worth 1.5m gp or
+  more (`ItemComposition.isStackable() == false`, GE value via
+  `ItemManager.getItemPrice`), from either NPC or player (PK) loot. Toggle:
+  "Share big loot drops" in config, default **off** (opt-in).
+- **Death screenshots** — fires when the local player dies. Toggle: "Share
+  death screenshots" in config, default **off** (opt-in). The text posted
+  alongside the screenshot defaults to "Died." but can be customized via the
+  "Death message" config field (e.g. "died being silly").
+- **Clan coffer activity** — fires on clan-chat messages that look like a
+  coffer deposit/withdraw. Always on, no config toggle (clan business, not
+  personal activity — see the task's decision log).
+
+Delivery goes through `catabot`'s `POST /alerts` endpoint, which owns the
+`kind`-to-channel-ID mapping server-side. Live-verified end-to-end against
+production for all three alert kinds.
 
 ## Endpoint paths (bot, not website)
 
@@ -49,7 +75,13 @@ src/main/java/com/catastrophic/events/
   CatastrophicEventsPlugin.java   - plugin entrypoint, poll loop, reminders
   CatastrophicEventsConfig.java   - config panel fields
   api/EventsApiClient.java        - OkHttp calls to the bot's plugin API
+  api/AlertsApiClient.java        - multipart POST {apiBase}/alerts (screenshot + summary)
   api/dto/                        - Gson response/request shapes (ids are String - Mongo ObjectIds)
+  alerts/AlertKind.java           - loot|death|coffer, matches the bot's `kind` field
+  alerts/ScreenshotCapture.java   - captures the current client frame as PNG bytes
+  alerts/LootAlertListener.java   - @Subscribe on NpcLootReceived/PlayerLootReceived
+  alerts/DeathAlertListener.java  - @Subscribe on ActorDeath (local player only)
+  alerts/CofferAlertListener.java - @Subscribe on ChatMessage (clan coffer text)
   ui/CatastrophicEventsPanel.java - top-level panel: header, tabs, footer, state routing
   ui/EventHeroCard.java           - featured/expanded card (My Events tab)
   ui/EventCompactRow.java         - compact list row (All Events tab, secondary joined events)
