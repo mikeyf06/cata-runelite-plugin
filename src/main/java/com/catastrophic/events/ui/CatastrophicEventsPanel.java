@@ -5,13 +5,11 @@ import com.catastrophic.events.CatastrophicEventsPlugin;
 import com.catastrophic.events.api.dto.EventDto;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -25,12 +23,11 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.client.util.LinkBrowser;
 
-@Slf4j
 public class CatastrophicEventsPanel extends PluginPanel
 {
 	private enum Tab
@@ -297,14 +294,7 @@ public class CatastrophicEventsPanel extends PluginPanel
 
 	private void openDiscordServer()
 	{
-		try
-		{
-			Desktop.getDesktop().browse(new URI("https://discord.com/channels/" + CatastrophicEventsPlugin.DISCORD_GUILD_ID));
-		}
-		catch (Exception ex)
-		{
-			log.warn("Failed to open Discord server", ex);
-		}
+		LinkBrowser.browse("https://discord.com/channels/" + CatastrophicEventsPlugin.DISCORD_GUILD_ID);
 	}
 
 	private static JLabel sectionLabel(String text)

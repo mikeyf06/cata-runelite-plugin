@@ -5,10 +5,8 @@ import com.catastrophic.events.api.dto.EventDto;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.net.URI;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -20,10 +18,9 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
-import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.util.LinkBrowser;
 
 /** The expanded "featured" event card - the soonest joined event on the My Events tab. */
-@Slf4j
 class EventHeroCard extends RoundedPanel
 {
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a z");
@@ -162,14 +159,7 @@ class EventHeroCard extends RoundedPanel
 
 	private static void openVoiceChannel(String voiceChannelId)
 	{
-		try
-		{
-			Desktop.getDesktop().browse(new URI("https://discord.com/channels/" + CatastrophicEventsPlugin.DISCORD_GUILD_ID + "/" + voiceChannelId));
-		}
-		catch (Exception ex)
-		{
-			log.warn("Failed to open Discord voice channel", ex);
-		}
+		LinkBrowser.browse("https://discord.com/channels/" + CatastrophicEventsPlugin.DISCORD_GUILD_ID + "/" + voiceChannelId);
 	}
 
 	private static String worldText(EventDto event)
