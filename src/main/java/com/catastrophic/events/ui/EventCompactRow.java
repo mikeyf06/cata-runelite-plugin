@@ -4,7 +4,10 @@ import com.catastrophic.events.api.dto.EventDto;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.function.Consumer;
@@ -17,6 +20,7 @@ import javax.swing.JPanel;
 class EventCompactRow extends RoundedPanel
 {
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
+	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d");
 
 	EventCompactRow(EventDto event, Consumer<JButton> onJoinClicked)
 	{
@@ -67,11 +71,27 @@ class EventCompactRow extends RoundedPanel
 		try
 		{
 			OffsetDateTime start = OffsetDateTime.parse(event.getStartAt());
-			return TIME_FORMAT.format(start.atZoneSameInstant(java.time.ZoneId.systemDefault()));
+			ZonedDateTime startLocal = start.atZoneSameInstant(ZoneId.systemDefault());
+			return dayLabel(startLocal) + " · " + TIME_FORMAT.format(startLocal);
 		}
 		catch (DateTimeParseException | NullPointerException e)
 		{
 			return "time unknown";
 		}
+	}
+
+	private static String dayLabel(ZonedDateTime startLocal)
+	{
+		LocalDate today = LocalDate.now(startLocal.getZone());
+		LocalDate startDate = startLocal.toLocalDate();
+		if (startDate.equals(today))
+		{
+			return "Today";
+		}
+		if (startDate.equals(today.plusDays(1)))
+		{
+			return "Tomorrow";
+		}
+		return DATE_FORMAT.format(startLocal);
 	}
 }
