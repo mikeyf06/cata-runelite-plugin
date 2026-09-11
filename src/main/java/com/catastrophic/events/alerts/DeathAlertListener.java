@@ -15,6 +15,9 @@ import net.runelite.client.eventbus.Subscribe;
 @Slf4j
 public class DeathAlertListener
 {
+	/** Placeholder in the configured death message that gets replaced with the player's name. */
+	public static final String NAME_TOKEN = "$name";
+
 	private final Client client;
 	private final CatastrophicEventsConfig config;
 	private final ScreenshotCapture screenshotCapture;
@@ -49,7 +52,10 @@ public class DeathAlertListener
 			return;
 		}
 
-		String message = Strings.isNullOrEmpty(config.deathMessage()) ? "Died." : config.deathMessage();
+		String rawMessage = Strings.isNullOrEmpty(config.deathMessage()) ? "Died." : config.deathMessage();
+
+		String playerName = client.getLocalPlayer().getName();
+		String message = playerName == null ? rawMessage : rawMessage.replace(NAME_TOKEN, playerName);
 
 		screenshotCapture.capture(png -> alertsApiClient.sendAlert(token, AlertKind.DEATH, message, png, new ApiCallback<Void>()
 		{

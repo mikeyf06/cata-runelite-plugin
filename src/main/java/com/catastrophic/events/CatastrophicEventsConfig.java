@@ -45,7 +45,7 @@ public interface CatastrophicEventsConfig extends Config
 		position = 4,
 		keyName = "deathMessage",
 		name = "Death message",
-		description = "Text posted alongside death alerts, e.g. \"died being silly\". Leave blank for the default \"Died.\""
+		description = "Text posted alongside death alerts. Use $name for your character's name, e.g. \"$name is trying his best\". Leave blank for the default \"Died.\""
 	)
 	default String deathMessage()
 	{

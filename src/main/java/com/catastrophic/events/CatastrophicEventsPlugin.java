@@ -47,6 +47,8 @@ public class CatastrophicEventsPlugin extends Plugin
 	private static final int POLL_INTERVAL_SECONDS = 45;
 	private static final int[] REMINDER_MILESTONES_MINUTES = {180, 60, 5};
 	public static final String DISCORD_GUILD_ID = "703371593937584198";
+	private static final String CONFIG_GROUP = "catastrophicevents";
+	private static final String DEATH_MESSAGE_NAME_TOKEN_MIGRATED_KEY = "deathMessageNameTokenMigratedV2";
 
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -97,6 +99,8 @@ public class CatastrophicEventsPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
+		migrateDeathMessageNameToken();
+
 		panel = new CatastrophicEventsPanel(this::onJoinClicked, configManager, config, this::pollEvents);
 
 		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "icon.png");
@@ -130,6 +134,31 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.unregister(cofferAlertListener);
 		clientToolbar.removeNavigation(navButton);
 		panel.destroy();
+	}
+
+	/**
+	 * One-time migration: players who already had a custom death message before the $name token existed
+	 * get it prepended automatically (e.g. "is a silly goose" -> "$name is a silly goose"), so it reads as
+	 * a natural sentence and they can reposition it in the config panel if they want.
+	 */
+	private void migrateDeathMessageNameToken()
+	{
+		if (!Strings.isNullOrEmpty(configManager.getConfiguration(CONFIG_GROUP, DEATH_MESSAGE_NAME_TOKEN_MIGRATED_KEY)))
+		{
+			return;
+		}
+
+		String message = config.deathMessage();
+		if (!Strings.isNullOrEmpty(message))
+		{
+			String withoutToken = message.replace(DeathAlertListener.NAME_TOKEN, "").trim();
+			String migrated = Strings.isNullOrEmpty(withoutToken)
+				? DeathAlertListener.NAME_TOKEN
+				: DeathAlertListener.NAME_TOKEN + " " + withoutToken;
+			configManager.setConfiguration(CONFIG_GROUP, "deathMessage", migrated);
+		}
+
+		configManager.setConfiguration(CONFIG_GROUP, DEATH_MESSAGE_NAME_TOKEN_MIGRATED_KEY, "true");
 	}
 
 	private void pollEvents()
