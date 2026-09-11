@@ -20,7 +20,7 @@ import javax.swing.JPanel;
 class EventCompactRow extends RoundedPanel
 {
 	private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mm a");
-	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d");
+	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEE M/d");
 
 	EventCompactRow(EventDto event, Consumer<JButton> onJoinClicked)
 	{
@@ -35,9 +35,8 @@ class EventCompactRow extends RoundedPanel
 		WrappingLabel title = new WrappingLabel(event.getTitle(), CatastrophicTheme.boldFont(), CatastrophicTheme.TEXT);
 		title.setSize(new Dimension(70, Short.MAX_VALUE));
 
-		JLabel subtitle = new JLabel(subtitleText(event));
-		subtitle.setFont(CatastrophicTheme.smallFont());
-		subtitle.setForeground(CatastrophicTheme.TEXT_DIM);
+		WrappingLabel subtitle = new WrappingLabel(subtitleText(event), CatastrophicTheme.smallFont(), CatastrophicTheme.TEXT_DIM);
+		subtitle.setSize(new Dimension(70, Short.MAX_VALUE));
 		subtitle.setBorder(BorderFactory.createEmptyBorder(CatastrophicTheme.SPACE_XS, 0, 0, 0));
 
 		JPanel textPanel = new JPanel();

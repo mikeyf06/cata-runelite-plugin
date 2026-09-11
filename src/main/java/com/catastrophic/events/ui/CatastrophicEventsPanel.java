@@ -279,7 +279,7 @@ public class CatastrophicEventsPanel extends PluginPanel
 		row.add(discord);
 
 		CircleIconButton settings = new CircleIconButton("⚙", CatastrophicTheme.CARD_BACKGROUND,
-			showingSettings ? "Close Setup" : "Event Setup");
+			showingSettings ? "Close Settings" : "Plugin Settings");
 		settings.addActionListener(e -> toggleSettings());
 		row.add(settings);
 
