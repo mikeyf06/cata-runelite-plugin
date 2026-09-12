@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-09-12T18:30:00Z"
+  },
+  "task_id": "coffer-alert-text-only",
+  "track": "JDI",
+  "status": "qa_review",
+  "project_type": "personal",
+  "branch": "bugfix/coffer-alert-text-only",
+  "request": {
+    "summary": "Stop sending a screenshot for clan coffer Discord alerts - post text-only (the existing chat-message text already names the acting player), while loot and death alerts keep sending screenshots unchanged.",
+    "submitted_at": "2026-09-12T18:18:23Z",
+    "raw_requirements": "Tweak the clan coffer Discord alert (added in the already-shipped discord-loot-death-coffer-alerts task, archived at .mflow/tasks/archive/2026/discord-loot-death-coffer-alerts/) to stop sending a screenshot - post text only.\n\nCurrent behavior (src/main/java/com/catastrophic/events/alerts/CofferAlertListener.java): on a clan coffer deposit/withdraw chat message, it captures a screenshot via ScreenshotCapture and sends both the screenshot and the raw chat message text (which already names the depositing/withdrawing player, e.g. \"Zezima has deposited 500,000 coins into the coffer.\") to catabot's POST /alerts endpoint via AlertsApiClient.\n\nRequested change: drop the screenshot entirely for coffer alerts - post only the text summary (which already contains the acting player's name from the raw in-game chat message). Loot and death alerts are unaffected and keep sending screenshots.\n\nThis requires a plugin-side change (AlertsApiClient needs a way to send an alert with no image; CofferAlertListener stops calling ScreenshotCapture) and a companion catabot-side change (POST /alerts currently requires an image file for every kind - see src/http/server.ts - needs to make the image optional, at least for kind=coffer, and only attach a files array to the Discord message when an image is present). The catabot side also currently prefixes the message with \"**RSN**\" looked up from the reporting client's own linked Discord account (Member.primaryRsn via req.discordId) - decided during this intake: drop that prefix for coffer specifically (it names the observing client, not the actual depositor, and coffer messages broadcast clan-wide so the observer isn't necessarily the actor), while loot and death keep the RSN prefix unchanged since those describe the reporting player's own action.\n\nThis plugin-repo task covers the plugin-side change only; the catabot-side change will be tracked as a separate companion task in that repo's own .mflow, same pattern as the original feature."
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Add a no-image overload to AlertsApiClient.sendAlert(...), keeping the existing image-carrying overload for loot/death unchanged, sharing the request-building/response-handling logic between both rather than duplicating it. Update CofferAlertListener to call the new overload directly instead of routing through ScreenshotCapture, dropping that dependency entirely from the class.",
+    "steps": [
+      "Step 1 - api/AlertsApiClient.java: add sendAlert(String token, AlertKind kind, String summary, ApiCallback<Void> callback) (no pngBytes param). Refactor both overloads to share one private request-building/response-handling path, parameterized on an optional image part, instead of duplicating the OkHttp Callback anonymous class a second time (watch WRN-005 - don't add a third copy of the 401/unsuccessful/network classification).",
+      "Step 2 - alerts/CofferAlertListener.java: remove the ScreenshotCapture field and constructor param entirely; call the new no-image sendAlert(...) overload directly with the matched chat message text.",
+      "Step 3 - README.md: update the \"Discord alerts\" section's coffer bullet to note it's text-only (no screenshot), and mention the catabot-side companion change (making image optional on POST /alerts for kind=coffer, dropping the misleading RSN prefix for coffer) is tracked separately in that repo's own .mflow.",
+      "Step 4 - Manual QA: ./gradlew compileJava to confirm it compiles clean. No live game session available in this environment - full in-game confirmation (coffer alert posts text-only, loot/death alerts unaffected) is on the developer before shipping."
+    ],
+    "planned_at": "2026-09-12T18:19:47Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-09-12T18:56:11Z",
+    "notes": "Definition of done confirmed by developer (all 4 plan steps complete, conventions followed, no unit tests since no test framework exists in this repo - TD-001, no staging branch in use here). Concerns check: no new concerns - WRN-005 not made worse, and the catabot-side dependency (image optional for coffer, no RSN prefix for coffer) is confirmed resolved and live on catabot's origin/main. Dev UAT checklist (5 items covering text-only posting, correct actor attribution, loot/death regression, and coffer dedup) confirmed passing by developer.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-09-12T18:18:23Z",
+    "updated_at": "2026-09-12T18:30:00Z"
+  }
+}

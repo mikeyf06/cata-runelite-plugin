@@ -51,4 +51,15 @@ public interface CatastrophicEventsConfig extends Config
 	{
 		return "";
 	}
+
+	@ConfigItem(
+		position = 5,
+		keyName = "eventRemindersEnabled",
+		name = "Event chat reminders",
+		description = "Show private chatbox messages for events you're signed up for: milestone reminders (T-3h/T-1h/T-5min) and a once-per-session summary. Only visible to you - nothing is posted anywhere."
+	)
+	default boolean eventRemindersEnabled()
+	{
+		return false;
+	}
 }

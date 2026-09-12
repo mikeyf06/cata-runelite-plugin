@@ -238,6 +238,11 @@ public class CatastrophicEventsPlugin extends Plugin
 
 	private void checkReminderMilestones(List<EventDto> events)
 	{
+		if (!config.eventRemindersEnabled())
+		{
+			return;
+		}
+
 		for (EventDto event : events)
 		{
 			if (!event.isSignedUp())
@@ -282,6 +287,11 @@ public class CatastrophicEventsPlugin extends Plugin
 	/** One-time "here's what you're signed up for" summary, one chat message per event, fired once per session. */
 	private void announceSignedUpEvents(List<EventDto> events)
 	{
+		if (!config.eventRemindersEnabled())
+		{
+			return;
+		}
+
 		for (EventDto event : events)
 		{
 			if (!event.isSignedUp())

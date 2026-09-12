@@ -12,7 +12,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.eventbus.Subscribe;
 
-/** Shares a screenshot of clan coffer deposit/withdraw chat messages to Discord. Always on - no config toggle. */
+/** Shares clan coffer deposit/withdraw chat messages to Discord as text (no screenshot). Always on - no config toggle. */
 @Slf4j
 public class CofferAlertListener
 {
@@ -23,15 +23,12 @@ public class CofferAlertListener
 		"deposit|withdr", Pattern.CASE_INSENSITIVE);
 
 	private final CatastrophicEventsConfig config;
-	private final ScreenshotCapture screenshotCapture;
 	private final AlertsApiClient alertsApiClient;
 
 	@Inject
-	public CofferAlertListener(CatastrophicEventsConfig config, ScreenshotCapture screenshotCapture,
-		AlertsApiClient alertsApiClient)
+	public CofferAlertListener(CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
 	{
 		this.config = config;
-		this.screenshotCapture = screenshotCapture;
 		this.alertsApiClient = alertsApiClient;
 	}
 
@@ -57,7 +54,7 @@ public class CofferAlertListener
 			return;
 		}
 
-		screenshotCapture.capture(png -> alertsApiClient.sendAlert(token, AlertKind.COFFER, message, png, new ApiCallback<Void>()
+		alertsApiClient.sendAlert(token, AlertKind.COFFER, message, new ApiCallback<Void>()
 		{
 			@Override
 			public void onSuccess(Void result)
@@ -69,6 +66,6 @@ public class CofferAlertListener
 			{
 				log.debug("Coffer alert failed: {}", errorMessage);
 			}
-		}));
+		});
 	}
 }

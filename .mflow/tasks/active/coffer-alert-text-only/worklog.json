@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "coffer-alert-text-only",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260912-182200",
+    "started_at": "2026-09-12T18:22:00Z",
+    "updated_at": "2026-09-12T18:30:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "note",
+      "timestamp": "2026-09-12T18:30:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "All 4 plan steps completed on branch bugfix/coffer-alert-text-only; ./gradlew compileJava succeeded.",
+      "detail": "AlertsApiClient.sendAlert() split into a text-only overload and the existing image-carrying overload, both sharing one request-building/response-handling path (addresses WRN-005 by not adding a third duplicate rather than by fixing the existing duplication). CofferAlertListener no longer depends on ScreenshotCapture and calls the text-only overload directly; its class Javadoc was updated to match (screenshot -> text-only) as part of the same step, not logged separately since it's a direct consequence of the code change in the same file. README.md's Discord alerts section updated to describe the coffer text-only behavior and flag the still-outstanding catabot-side companion change (optional image for kind=coffer, drop the observer-RSN prefix for coffer). No live game session available in this environment - in-game confirmation that the coffer message posts correctly (and that loot/death are unaffected) is still on the developer before shipping, consistent with how the original feature was verified.",
+      "related_step": "Steps 1-4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "note",
+      "timestamp": "2026-09-12T18:56:11Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "Definition of done, concerns check, and Dev UAT checklist all confirmed by developer. Notably, the catabot-side companion dependency (image optional for kind=coffer, no RSN prefix for coffer) was checked during this verification and found already merged and pushed to catabot's origin/main (commit 2c886d4, task coffer-alerts-image-rsn-fix), so no shipping-order risk remains.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

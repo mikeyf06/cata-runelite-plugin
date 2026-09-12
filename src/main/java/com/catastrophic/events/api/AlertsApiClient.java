@@ -27,19 +27,29 @@ public class AlertsApiClient
 		this.httpClient = httpClient;
 	}
 
+	/** Text-only alert - no screenshot attached (e.g. clan coffer activity). */
+	public void sendAlert(String token, AlertKind kind, String summary, ApiCallback<Void> callback)
+	{
+		sendAlert(token, kind, summary, null, callback);
+	}
+
+	/** Alert with a screenshot attached (e.g. loot, death). */
 	public void sendAlert(String token, AlertKind kind, String summary, byte[] pngBytes, ApiCallback<Void> callback)
 	{
-		RequestBody body = new MultipartBody.Builder()
+		MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
 			.setType(MultipartBody.FORM)
 			.addFormDataPart("kind", kind.wireValue())
-			.addFormDataPart("summary", summary)
-			.addFormDataPart("image", "alert.png", RequestBody.create(PNG, pngBytes))
-			.build();
+			.addFormDataPart("summary", summary);
+
+		if (pngBytes != null)
+		{
+			bodyBuilder.addFormDataPart("image", "alert.png", RequestBody.create(PNG, pngBytes));
+		}
 
 		Request request = new Request.Builder()
 			.url(API_BASE + "/alerts")
 			.header("Authorization", "Bearer " + token)
-			.post(body)
+			.post(bodyBuilder.build())
 			.build();
 
 		httpClient.newCall(request).enqueue(new Callback()
