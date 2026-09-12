@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-09-12T18:42:00Z"
+  },
+  "task_id": "event-chat-reminders-opt-in",
+  "track": "JDI",
+  "status": "qa_review",
+  "project_type": "personal",
+  "branch": "feature/event-chat-reminders-opt-in",
+  "request": {
+    "summary": "Add a single opt-in config toggle (default off) that gates the plugin's existing private, client-side-only chatbox alerts about events - both the T-3h/T-1h/T-5min milestone reminders and the once-per-session \"here's what you're signed up for\" summary.",
+    "submitted_at": "2026-09-12T18:34:25Z",
+    "raw_requirements": "Add an opt-in config toggle for the plugin's existing in-game chat message alerts about events.\n\nCurrent behavior (CatastrophicEventsPlugin.java): the plugin already pushes private, client-side-only chatbox messages (via ChatMessageManager/sendClientMessage - nothing sent to the game server, nothing shared with anyone else) for two things, both currently always-on with no config gate:\n1. checkReminderMilestones/sendReminder - milestone reminders at T-3h/T-1h/T-5min for events the player is signed up for, deduped per event+milestone.\n2. announceSignedUpEvents - a once-per-client-session \"here's what you're signed up for\" summary fired on the first successful poll.\n\nRequested change: add a config checkbox so these are opt-in (default off), consistent in spirit with how lootSharingEnabled/deathScreenshotsEnabled work in CatastrophicEventsConfig.java, gating both sendReminder and announceSignedUpEvents behind a single new toggle (both go through the same sendClientMessage mechanism, so one toggle covers both). This is purely a client-side/local feature - no Discord or catabot involvement, unlike the loot/death/coffer alerts."
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Add one new boolean @ConfigItem to CatastrophicEventsConfig.java (matching the lootSharingEnabled/deathScreenshotsEnabled pattern), then gate both checkReminderMilestones(...) and announceSignedUpEvents(...) in CatastrophicEventsPlugin.java behind it with a single early-return check in each - no changes needed to the poll-loop call sites themselves.",
+    "steps": [
+      "Step 1 - CatastrophicEventsConfig.java: add @ConfigItem(position = 5, keyName = \"eventRemindersEnabled\", name = \"Event chat reminders\", ...), default false, description covering both the T-3h/T-1h/T-5min milestone reminders and the once-per-session signed-up-events summary.",
+      "Step 2 - CatastrophicEventsPlugin.java: add an early-return `if (!config.eventRemindersEnabled()) { return; }` at the top of checkReminderMilestones(List<EventDto> events) and at the top of announceSignedUpEvents(List<EventDto> events).",
+      "Step 3 - README.md: update the config-panel bullet under \"What's implemented\" and the reminders bullet to note this is now opt-in (default off).",
+      "Step 4 - Manual QA: ./gradlew compileJava to confirm it compiles clean. No live game session available in this environment - confirming reminders stay silent when off and fire correctly when on is on the developer before shipping."
+    ],
+    "planned_at": "2026-09-12T18:35:22Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-09-12T19:02:58Z",
+    "notes": "Definition of done confirmed by developer (all 4 plan steps complete, conventions followed, no unit tests since no test framework exists in this repo - TD-001, no staging branch in use here). Concerns check: no new concerns - purely local/client-side gate on existing logic. Dev UAT confirmed by developer, based on the live ./gradlew run session against this exact branch's changes earlier in the day.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-09-12T18:34:25Z",
+    "updated_at": "2026-09-12T18:42:00Z"
+  }
+}

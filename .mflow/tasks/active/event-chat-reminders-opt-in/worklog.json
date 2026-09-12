@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "event-chat-reminders-opt-in",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260912-183800",
+    "started_at": "2026-09-12T18:38:00Z",
+    "updated_at": "2026-09-12T18:42:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "note",
+      "timestamp": "2026-09-12T18:42:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "All 4 plan steps completed on branch feature/event-chat-reminders-opt-in; ./gradlew compileJava succeeded.",
+      "detail": "Before branching, stashed coffer-alert-text-only's uncommitted tracked-file changes (README.md, CofferAlertListener.java, AlertsApiClient.java - that task is still qa_review, not shipped) via `git stash push` scoped to just those 3 files, then branched feature/event-chat-reminders-opt-in off a clean main. The .mflow task folders for both tasks are untracked and were left in place across the branch switch (untracked files aren't branch-scoped). Added CatastrophicEventsConfig.eventRemindersEnabled() (default false) and gated both checkReminderMilestones() and announceSignedUpEvents() in CatastrophicEventsPlugin.java with an early return. README.md updated. No live game session available in this environment - confirming reminders stay silent when off and fire correctly when on is on the developer before shipping.",
+      "related_step": "Steps 1-4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "note",
+      "timestamp": "2026-09-12T18:50:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "IMPORTANT for whoever picks up bugfix/coffer-alert-text-only or feature/event-chat-reminders-opt-in next: neither branch has any commits yet, so they currently share identical git history and only differ in uncommitted working-tree state.",
+      "detail": "Checking out one branch from the other carries the CURRENT uncommitted changes along rather than swapping to that branch's own changes, because git has nothing committed to distinguish them - this happened twice while tidying up after execution (had to re-stash and re-pop to untangle event-chat-reminders-opt-in's changes from coffer-alert-text-only's). Both branches' working trees are now confirmed correct as of this entry (verified by inspecting stash diffs directly, not by re-checking out). Recommend committing each task's changes on its own branch as soon as possible (via ship-task or otherwise) before switching between them again, to stop this from recurring.",
+      "related_step": null,
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-003",
+      "type": "note",
+      "timestamp": "2026-09-12T19:02:58Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "Definition of done, concerns check, and Dev UAT checklist all confirmed by developer, drawing on the earlier live ./gradlew run session against this branch's changes.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

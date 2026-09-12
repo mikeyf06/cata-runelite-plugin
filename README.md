@@ -11,7 +11,8 @@ paths there are stale, see below).
 ## What's implemented
 
 - Config panel: plugin token (secret field), loot-sharing and
-  death-screenshot toggles (both opt-in), a custom death message field
+  death-screenshot toggles (both opt-in), a custom death message field, and
+  an event chat reminders toggle (opt-in)
 - Poll loop (45s) hitting `GET {apiBase}/events`
 - Side panel: not-linked state, connection-error state, All Events / My Events
   tabs, a featured "hero" card for the soonest joined event, compact rows for
@@ -20,7 +21,10 @@ paths there are stale, see below).
 - Discord deep-link button per event, and a general "open Discord server"
   footer button, both using a hardcoded guild ID (`DISCORD_GUILD_ID` in
   `CatastrophicEventsPlugin.java`) - not user-configurable
-- Private chatbox reminders at T-3h / T-1h / T-5min, deduped per event+milestone
+- Private chatbox reminders at T-3h / T-1h / T-5min, deduped per event+milestone,
+  plus a once-per-session "here's what you're signed up for" summary - both
+  gated behind the "Event chat reminders" config toggle, default **off**
+  (opt-in)
 - Inline "Event Setup" view (gear icon) for editing the plugin token without
   leaving the panel — writes straight to `ConfigManager`
 - Discord alerts: loot sharing, death screenshots, and clan coffer activity —
@@ -33,27 +37,35 @@ hidden, since the mocked-up design calls for them.
 
 ## Discord alerts
 
-The plugin posts a screenshot (and, for loot/coffer, a text summary) to
-Discord for three kinds of moments, via a new `POST {apiBase}/alerts`
-endpoint on the bot (see `alerts/` and `api/AlertsApiClient.java`). The
-plugin never holds Discord channel IDs or webhook URLs — the bot maps
-`kind` (`loot`/`death`/`coffer`) to a channel on its own side.
+The plugin posts to Discord for three kinds of moments, via a new
+`POST {apiBase}/alerts` endpoint on the bot (see `alerts/` and
+`api/AlertsApiClient.java`). The plugin never holds Discord channel IDs or
+webhook URLs — the bot maps `kind` (`loot`/`death`/`coffer`) to a channel on
+its own side.
 
 - **Loot sharing** — fires on any single non-stackable item worth 1.5m gp or
   more (`ItemComposition.isStackable() == false`, GE value via
-  `ItemManager.getItemPrice`), from either NPC or player (PK) loot. Toggle:
-  "Share big loot drops" in config, default **off** (opt-in).
-- **Death screenshots** — fires when the local player dies. Toggle: "Share
-  death screenshots" in config, default **off** (opt-in). The text posted
-  alongside the screenshot defaults to "Died." but can be customized via the
-  "Death message" config field (e.g. "died being silly").
+  `ItemManager.getItemPrice`), from either NPC or player (PK) loot. Posts a
+  screenshot plus a text summary. Toggle: "Share big loot drops" in config,
+  default **off** (opt-in).
+- **Death screenshots** — fires when the local player dies. Posts a
+  screenshot plus text. Toggle: "Share death screenshots" in config, default
+  **off** (opt-in). The text defaults to "Died." but can be customized via
+  the "Death message" config field (e.g. "died being silly").
 - **Clan coffer activity** — fires on clan-chat messages that look like a
-  coffer deposit/withdraw. Always on, no config toggle (clan business, not
-  personal activity — see the task's decision log).
+  coffer deposit/withdraw. **Text only, no screenshot** — the raw chat
+  message already names the player who deposited/withdrew, so
+  `AlertsApiClient.sendAlert(...)` is called via the text-only overload
+  (`ScreenshotCapture` isn't used here). Always on, no config toggle (clan
+  business, not personal activity — see the task's decision log).
 
 Delivery goes through `catabot`'s `POST /alerts` endpoint, which owns the
-`kind`-to-channel-ID mapping server-side. Live-verified end-to-end against
-production for all three alert kinds.
+`kind`-to-channel-ID mapping server-side. Loot and death were live-verified
+end-to-end against production; the coffer text-only change depends on a
+companion catabot change (tracked separately in that repo's own `.mflow`)
+to make the `image` field optional for `kind=coffer` and to stop prefixing
+the coffer message with the reporting client's own RSN (which names the
+observer, not the actual depositor/withdrawer).
 
 ## Endpoint paths (bot, not website)
 
