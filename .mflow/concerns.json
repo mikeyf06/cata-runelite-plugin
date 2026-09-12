@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "concerns",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-08-14T22:25:00Z"
+    "updated_at": "2026-09-12T19:15:00Z"
   },
   "tech_debt": [
     {
@@ -25,7 +25,9 @@
       "summary": "runelite-plugin.properties has an empty `version` field.",
       "severity": "low",
       "area": "runelite-plugin.properties",
-      "noted_at": "2026-08-07"
+      "noted_at": "2026-08-07",
+      "resolved_at": "2026-09-12T19:15:00Z",
+      "resolved_by": "coffer-alert-text-only"
     }
   ],
   "known_issues": [
