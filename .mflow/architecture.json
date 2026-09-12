@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "architecture",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-08-14T22:25:00Z"
+    "updated_at": "2026-09-12T19:07:28Z"
   },
   "pattern": "Single-plugin layered architecture following RuneLite's standard external-plugin shape: a Guice-injected Plugin class as orchestrator/controller, a dedicated HTTP API client layer, a Gson DTO layer mirroring the backend's JSON contract, and a Swing view layer (state-routed panel + presentational cards + a custom widget kit). Not MVC/MVVM in a strict sense - closer to a thin controller (the Plugin class) pushing state into a stateful, self-rendering View (CatastrophicEventsPanel).",
   "layers": [
@@ -15,17 +15,17 @@
     {
       "name": "Config",
       "path": "src/main/java/com/catastrophic/events/CatastrophicEventsConfig.java",
-      "responsibility": "RuneLite ConfigGroup interface declaring the plugin's user-facing settings (token, apiBase, websiteBase, guildId) with defaults, surfaced both in RuneLite's standard config UI and in the plugin's own inline SettingsView"
+      "responsibility": "RuneLite ConfigGroup interface declaring the plugin's user-facing settings (token, lootSharingEnabled, deathScreenshotsEnabled, deathMessage, eventRemindersEnabled) with defaults, surfaced in RuneLite's standard config UI"
     },
     {
       "name": "API client",
       "path": "src/main/java/com/catastrophic/events/api/",
-      "responsibility": "EventsApiClient wraps OkHttp calls to the bot's plugin API (GET /events, POST /signup); AlertsApiClient posts multipart/form-data (screenshot + summary) to POST /alerts; ApiCallback<T> is the async result interface; ApiErrorType classifies failures (UNAUTHORIZED / NETWORK / SERVER) so callers can branch on cause"
+      "responsibility": "EventsApiClient wraps OkHttp calls to the bot's plugin API (GET /events, POST /signup); AlertsApiClient posts to POST /alerts via two sendAlert overloads - one multipart with a screenshot (loot/death), one text-only with no image part (coffer) - sharing one request-building/response-handling path; ApiCallback<T> is the async result interface; ApiErrorType classifies failures (UNAUTHORIZED / NETWORK / SERVER) so callers can branch on cause"
     },
     {
       "name": "Alerts",
       "path": "src/main/java/com/catastrophic/events/alerts/",
-      "responsibility": "Game-event listeners (@Subscribe on RuneLite's EventBus) that detect loot/death/clan-coffer moments client-side, capture a screenshot via DrawManager, and hand off to AlertsApiClient to post to Discord through catabot. Registered/unregistered in CatastrophicEventsPlugin's startUp()/shutDown()."
+      "responsibility": "Game-event listeners (@Subscribe on RuneLite's EventBus) that detect loot/death/clan-coffer moments client-side and hand off to AlertsApiClient to post to Discord through catabot. Loot and death capture a screenshot via DrawManager first; coffer does not - it posts the raw chat message text only, since that text already names the acting player. Registered/unregistered in CatastrophicEventsPlugin's startUp()/shutDown()."
     },
     {
       "name": "DTOs",
@@ -82,6 +82,16 @@
       "decision": "Loot sharing and death screenshots are individually toggleable and default off (opt-in); clan coffer activity alerts have no toggle and are always on",
       "reason": "Loot/death alerts are personal player activity someone may not want shared, so opt-in is the safer default; coffer activity reflects clan-owned funds/business rather than personal activity, so there's less privacy rationale for an opt-out",
       "made_at": "2026-08-13/14 (discord-loot-death-coffer-alerts, WL-1 and WL-9)"
+    },
+    {
+      "decision": "Clan coffer Discord alerts post text-only, no screenshot - the raw in-game chat message already names the depositor/withdrawer, and the message content on catabot's side no longer gets the observer-attributed **RSN** prefix for coffer specifically (kept for loot/death)",
+      "reason": "The screenshot was redundant once the text already carries the needed information; the RSN prefix named the reporting client's own linked account, not the actual depositor/withdrawer, since coffer chat broadcasts clan-wide and any member's client could be the one that reports it",
+      "made_at": "2026-09-12 (coffer-alert-text-only)"
+    },
+    {
+      "decision": "Private chatbox reminders for events (milestones + the once-per-session signed-up summary) are gated behind a single eventRemindersEnabled config toggle, default off (opt-in)",
+      "reason": "Previously always-on with no way to disable; brought in line with the opt-in default already used for loot/death alerts, even though this feature is purely local/client-side with no sharing implications",
+      "made_at": "2026-09-12 (event-chat-reminders-opt-in)"
     }
   ]
 }

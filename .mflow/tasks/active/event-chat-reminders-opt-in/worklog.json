@@ -41,6 +41,17 @@
       "detail": "Definition of done, concerns check, and Dev UAT checklist all confirmed by developer, drawing on the earlier live ./gradlew run session against this branch's changes.",
       "related_step": null,
       "blocker": null
+    },
+    {
+      "entry_id": "WL-004",
+      "type": "note",
+      "timestamp": "2026-09-12T19:07:28Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Task shipped to production",
+      "detail": "No PR - direct merge per explicit developer instruction (no gh CLI available in this environment). Combined with coffer-alert-text-only onto branch feature/alert-and-reminder-tweaks (commit 62ca758), merged into main via --no-ff (73738eb), pushed to origin/main.",
+      "related_step": null,
+      "blocker": null
     }
   ]
 }

@@ -7,7 +7,7 @@
   },
   "task_id": "event-chat-reminders-opt-in",
   "track": "JDI",
-  "status": "qa_review",
+  "status": "deployed",
   "project_type": "personal",
   "branch": "feature/event-chat-reminders-opt-in",
   "request": {
@@ -34,9 +34,10 @@
   },
   "ship": {
     "pr_link": null,
-    "shipped_at": null,
-    "deployed_at": null,
-    "environment": null
+    "shipped_at": "2026-09-12T19:07:28Z",
+    "deployed_at": "2026-09-12T19:07:28Z",
+    "environment": "production",
+    "notes": "No PR - direct merge, per explicit developer instruction (no gh CLI available, solo project, no staging branch or reviewers - same pattern as discord-loot-death-coffer-alerts). Shipped together with coffer-alert-text-only in one combined branch/commit at developer's request. Commit 62ca758 on feature/alert-and-reminder-tweaks, merged to main via --no-ff at 73738eb, pushed to origin/main."
   },
   "archive": {
     "archived_at": null,
@@ -44,6 +45,6 @@
   },
   "timestamps": {
     "created_at": "2026-09-12T18:34:25Z",
-    "updated_at": "2026-09-12T18:42:00Z"
+    "updated_at": "2026-09-12T19:07:28Z"
   }
 }
