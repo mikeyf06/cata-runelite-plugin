@@ -30,16 +30,33 @@ public class AlertsApiClient
 	/** Text-only alert - no screenshot attached (e.g. clan coffer activity). */
 	public void sendAlert(String token, AlertKind kind, String summary, ApiCallback<Void> callback)
 	{
-		sendAlert(token, kind, summary, null, callback);
+		sendAlert(token, kind, summary, (String) null, callback);
 	}
 
 	/** Alert with a screenshot attached (e.g. loot, death). */
 	public void sendAlert(String token, AlertKind kind, String summary, byte[] pngBytes, ApiCallback<Void> callback)
 	{
+		sendAlert(token, kind, summary, null, pngBytes, callback);
+	}
+
+	/** Text-only alert with a short title (e.g. accomplishment, pet). */
+	public void sendAlert(String token, AlertKind kind, String summary, String title, ApiCallback<Void> callback)
+	{
+		sendAlert(token, kind, summary, title, null, callback);
+	}
+
+	/** Alert with a screenshot and a short title (e.g. mega-rare drop accomplishments). */
+	public void sendAlert(String token, AlertKind kind, String summary, String title, byte[] pngBytes, ApiCallback<Void> callback)
+	{
 		MultipartBody.Builder bodyBuilder = new MultipartBody.Builder()
 			.setType(MultipartBody.FORM)
 			.addFormDataPart("kind", kind.wireValue())
 			.addFormDataPart("summary", summary);
+
+		if (title != null)
+		{
+			bodyBuilder.addFormDataPart("title", title);
+		}
 
 		if (pngBytes != null)
 		{

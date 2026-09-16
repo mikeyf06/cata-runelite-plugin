@@ -1,8 +1,13 @@
 package com.catastrophic.events;
 
+import com.catastrophic.events.alerts.AccomplishmentLootListener;
 import com.catastrophic.events.alerts.CofferAlertListener;
 import com.catastrophic.events.alerts.DeathAlertListener;
 import com.catastrophic.events.alerts.LootAlertListener;
+import com.catastrophic.events.alerts.OneTimeRewardListener;
+import com.catastrophic.events.alerts.PetDropListener;
+import com.catastrophic.events.alerts.QuestMilestoneListener;
+import com.catastrophic.events.alerts.SkillMilestoneListener;
 import com.catastrophic.events.api.ApiCallback;
 import com.catastrophic.events.api.ApiErrorType;
 import com.catastrophic.events.api.EventsApiClient;
@@ -80,6 +85,21 @@ public class CatastrophicEventsPlugin extends Plugin
 	@Inject
 	private CofferAlertListener cofferAlertListener;
 
+	@Inject
+	private SkillMilestoneListener skillMilestoneListener;
+
+	@Inject
+	private QuestMilestoneListener questMilestoneListener;
+
+	@Inject
+	private AccomplishmentLootListener accomplishmentLootListener;
+
+	@Inject
+	private PetDropListener petDropListener;
+
+	@Inject
+	private OneTimeRewardListener oneTimeRewardListener;
+
 	private CatastrophicEventsPanel panel;
 	private NavigationButton navButton;
 	private ScheduledFuture<?> pollTask;
@@ -115,6 +135,10 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.register(lootAlertListener);
 		eventBus.register(deathAlertListener);
 		eventBus.register(cofferAlertListener);
+		eventBus.register(skillMilestoneListener);
+		eventBus.register(accomplishmentLootListener);
+		eventBus.register(petDropListener);
+		eventBus.register(oneTimeRewardListener);
 
 		remindersShown.clear();
 		announcedThisSession.set(false);
@@ -132,6 +156,10 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.unregister(lootAlertListener);
 		eventBus.unregister(deathAlertListener);
 		eventBus.unregister(cofferAlertListener);
+		eventBus.unregister(skillMilestoneListener);
+		eventBus.unregister(accomplishmentLootListener);
+		eventBus.unregister(petDropListener);
+		eventBus.unregister(oneTimeRewardListener);
 		clientToolbar.removeNavigation(navButton);
 		panel.destroy();
 	}
@@ -163,6 +191,8 @@ public class CatastrophicEventsPlugin extends Plugin
 
 	private void pollEvents()
 	{
+		questMilestoneListener.checkQuests();
+
 		String token = config.token();
 		if (Strings.isNullOrEmpty(token))
 		{

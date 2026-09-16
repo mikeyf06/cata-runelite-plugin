@@ -5,7 +5,9 @@ public enum AlertKind
 {
 	LOOT("loot"),
 	DEATH("death"),
-	COFFER("coffer");
+	COFFER("coffer"),
+	ACCOMPLISHMENT("accomplishment"),
+	PET("pet");
 
 	private final String wireValue;
 

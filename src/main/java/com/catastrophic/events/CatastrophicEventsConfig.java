@@ -62,4 +62,26 @@ public interface CatastrophicEventsConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		position = 6,
+		keyName = "accomplishmentSharingEnabled",
+		name = "Share account accomplishments",
+		description = "Post to Discord when you hit a skill/XP/total level milestone, complete a Grandmaster or special quest, receive a mega-rare drop, or achieve certain first-time capes."
+	)
+	default boolean accomplishmentSharingEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		position = 7,
+		keyName = "petDropSharingEnabled",
+		name = "Share pet drops",
+		description = "Post to Discord when you receive a pet."
+	)
+	default boolean petDropSharingEnabled()
+	{
+		return false;
+	}
 }

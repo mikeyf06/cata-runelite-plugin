@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "accomplishment-pet-alert-listeners",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260916-191718",
+    "started_at": "2026-09-16T19:17:18Z",
+    "updated_at": "2026-09-16T20:10:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "decision",
+      "timestamp": "2026-09-16T19:17:18Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Steps 1-3 implemented per plan. Caught a real overload-ambiguity compile error while writing Step 3: the 4-arg sendAlert(token, kind, summary, callback) delegates with a null 4th argument, but there are now two 5-arg overloads differing only in that position's type (byte[] vs String) - an unqualified null there is ambiguous to javac. Fixed with an explicit (String) null cast.",
+      "detail": "AlertsApiClient.java: sendAlert(token, kind, summary, callback) now calls sendAlert(token, kind, summary, (String) null, callback) instead of the ambiguous sendAlert(token, kind, summary, null, callback). The byte[]-overload's delegation to the 6-arg method (sendAlert(token, kind, summary, null, pngBytes, callback)) is unaffected since there's only one 6-arg signature to resolve against.",
+      "related_step": "Step 3",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "decision",
+      "timestamp": "2026-09-16T19:20:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "SkillMilestoneListener computes total level/XP by reading Client.getTotalLevel()/getOverallExperience() on every real-skill StatChanged, rather than relying on a StatChanged event for the Skill.OVERALL pseudo-skill.",
+      "detail": "Wasn't fully confident RuneLite synthesizes a StatChanged event for Skill.OVERALL the same way it does for real skills. Reading the two Client aggregate methods directly is the same approach used by other well-known RuneLite plugins (XP tracker, stats panel) and removes the uncertainty entirely rather than betting on an unverified event-firing assumption.",
+      "related_step": "Step 4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-003",
+      "type": "deviation",
+      "timestamp": "2026-09-16T19:22:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "QuestMilestoneListener matches by Quest.getName() display string rather than by Quest enum constant identifier.",
+      "detail": "Wasn't confident of the exact enum constant spelling for quests with subtitles (e.g. Desert Treasure II - The Fallen Empire) or for Blood Moon Rises, which may not have a stable enum identifier at all as a newer miniquest. Matching against the human-readable name (a well-documented, stable string) sidesteps that uncertainty. If Blood Moon Rises never fires QuestCompleted at all, this allowlist entry will simply never match - noted as a known gap to verify live, per PLAN.md concerns.",
+      "related_step": "Step 5",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-004",
+      "type": "note",
+      "timestamp": "2026-09-16T19:24:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "AccomplishmentLootListener references ItemID.TWISTED_BOW / SCYTHE_OF_VITUR / TUMEKENS_SHADOW / ANCIENT_BLOOD_ORNAMENT_KIT by best-confidence constant name, not verified against the pinned net.runelite:client jar yet - will be confirmed by the Step 10 compile/build pass; a wrong constant name fails the build loudly rather than silently matching the wrong item.",
+      "detail": null,
+      "related_step": "Step 6",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-005",
+      "type": "decision",
+      "timestamp": "2026-09-16T19:26:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "PetDropListener and AchievementCapeListener match on distinctive keyword patterns rather than exact full-sentence chat text, and PetDropListener doesn't filter by ChatMessageType.",
+      "detail": "Exact in-game wording for pet drops and the fire cape/infernal cape/Dizana's quiver completion messages wasn't verified against a live client. Keyword-pair matching (e.g. 'inferno' + a completion verb stem) is more resilient to getting the exact phrasing slightly wrong than a brittle full-sentence match would be, at the cost of being slightly less precise. Flagged as a UAT item - ideally confirmed against real chat log text before shipping.",
+      "related_step": "Step 7, Step 8",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-006",
+      "type": "decision",
+      "timestamp": "2026-09-16T19:27:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "AchievementCapeListener's one-time ConfigManager flag is set before the alert send completes, not in the onSuccess callback.",
+      "detail": "Trades a small risk (network failure after the flag is set means that one-time alert is lost for good, no retry) for protection against a double-fire if two related chat lines arrive close together. Matches the same dedupe-first tradeoff already made elsewhere in this codebase (CofferAlertListener / catabot's coffer dedup, which also stamps synchronously before any async work).",
+      "related_step": "Step 8",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-007",
+      "type": "deviation",
+      "timestamp": "2026-09-16T19:35:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "QuestMilestoneListener rewritten entirely - net.runelite.client.events.QuestCompleted does not exist in the pinned RuneLite API (1.12.36/1.12.38, confirmed by extracting and listing the actual cached client + runelite-api jars). There is no dedicated quest-completion event at all.",
+      "detail": "Verified via `unzip -l` against both cached client-*.jar and runelite-api-*.jar in ~/.gradle - no QuestCompleted class anywhere. Quest.class does exist (net.runelite.api.Quest) with a verified getState(Client) method returning QuestState (NOT_STARTED/IN_PROGRESS/FINISHED), confirmed via javap. Redesigned the listener to poll Quest.getState(client) once per GameTick for the 7 tracked quests, tracking previous state per quest (never firing on first observation, same veteran-safety pattern as SkillMilestoneListener) and firing only on a transition into FINISHED. This also resolves the earlier open concern about Blood Moon Rises - javap confirmed it's a real enum constant (Quest.THE_BLOOD_MOON_RISES), and DESERT_TREASURE_II__THE_FALLEN_EMPIRE / RECIPE_FOR_DISASTER (base quest, not a subquest) were also confirmed as real constants. All 7 tracked quests now referenced by verified enum constant instead of a guessed display-name string.",
+      "related_step": "Step 5",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-008",
+      "type": "deviation",
+      "timestamp": "2026-09-16T19:45:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Renamed AchievementCapeListener.java to OneTimeRewardListener.java per developer feedback - the name was genuinely ambiguous with the real Achievement Diary cape, which this feature explicitly excludes.",
+      "detail": "No behavior change, pure rename: class, file, constructor, and all references in CatastrophicEventsPlugin.java (import, field oneTimeRewardListener, register/unregister calls). Still covers exactly the same three items: fire cape, infernal cape, Dizana's quiver. Recompiled clean after the rename.",
+      "related_step": "Step 8",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-009",
+      "type": "deviation",
+      "timestamp": "2026-09-16T20:05:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Raised during verify-task: developer questioned checking 7 quests' state every GameTick (~600ms). Not a real performance issue (Quest.getState(Client) is a cheap cached-varbit read, no I/O), but a real architectural mismatch - quest completion has no real-time urgency, so a per-tick EventBus subscription didn't belong in the event-reactive Alerts package. Moved to CatastrophicEventsPlugin's existing 45s pollEvents() loop instead.",
+      "detail": "QuestMilestoneListener.java: removed @Subscribe GameTick, replaced with a public checkQuests() method called from pollEvents() (CatastrophicEventsPlugin.java). Removed the eventBus.register()/unregister() calls for questMilestoneListener in startUp()/shutDown() since it's no longer an EventBus listener. Same detection logic and veteran-safety baseline tracking, just invoked on the existing 45s cadence instead of per-tick. Recompiled clean.",
+      "related_step": "Step 5, Step 9",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-010",
+      "type": "note",
+      "timestamp": "2026-09-16T20:10:00Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "Full `./gradlew build` clean (compile + jar + test-compile). Live client boot re-confirmed with zero DI errors after the QuestMilestoneListener refactor. Definition of done confirmed except the staging-branch item (N/A, no staging branch exists in this repo). Live-only UAT items (real 99/quest/mega-rare/cape/pet) accepted as watch-for-it-live rather than blocking.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

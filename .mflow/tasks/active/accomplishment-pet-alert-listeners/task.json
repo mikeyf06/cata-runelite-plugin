@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-09-16T20:10:00Z"
+  },
+  "task_id": "accomplishment-pet-alert-listeners",
+  "track": "JDI",
+  "status": "qa_review",
+  "project_type": "personal",
+  "branch": "feature/accomplishment-pet-alert-listeners",
+  "request": {
+    "summary": "Add plugin-side detection and alerting for Tier 1 clan accomplishments (skill/XP/total-level milestones, GM/special quest completions, mega-rare drops, pet drops, and first-time fire cape/infernal cape/Dizana's quiver), posting to catabot's new accomplishment/pet alert kinds - the plugin-side half of the feature whose bot side already shipped.",
+    "submitted_at": "2026-09-16T19:08:19Z",
+    "raw_requirements": "Add clan \"accomplishment\" and \"pet drop\" alert detection to the RuneLite plugin - the plugin-side half of the clan accomplishments/points feature. The bot side already shipped (task accomplishment-pet-alert-channels in the catabot repo, deployed to production): POST /alerts now accepts kind=accomplishment and kind=pet, routed to their own Discord channels, plus an optional \"title\" field.\n\nScope - Tier 1 easy wins only, agreed on with the user after ruling out anything that requires reading pre-existing account state (false-positive risk for veteran players who already had something before the plugin existed):\n\n1. Skill/XP milestones via StatChanged: reaching 99 in a skill, every 25m XP in a skill past 99 (25m, 50m, 75m...), every 50m total XP (50m, 100m, 150m, 200m), total level milestones (1750, 2000, 2200), and max cape (all 99s / 2277 total level).\n2. Grandmaster/special quest completion via QuestCompleted: Desert Treasure II, Dragon Slayer II, Monkey Madness II, Song of the Elves, Recipe for Disaster, While Guthix Sleeps, Blood Moon Rises.\n3. Mega-rare and high-value one-off drops: Twisted Bow, Scythe of Vitur, Tumeken's Shadow, and the Ancient Blood Ornament Kit (Blood Torva). This should NOT be folded into the existing LootAlertListener (src/main/java/com/catastrophic/events/alerts/LootAlertListener.java) - that listener is value-threshold-based (>=1.5m gp, any item), gated by the existing lootSharingEnabled toggle, and posts to the \"loot\" Discord channel. This is a different feature: a fixed item-ID allowlist regardless of value, gated by a new toggle, posting to the new \"accomplishment\" channel. Needs its own listener.\n4. Pet drop detection via chat message (the \"you have a funny feeling like you're being followed\" style message).\n5. First-time achievement capes/items that are obtained via a one-time in-game event (not a state check): fire cape, infernal cape, Dizana's quiver. Detect via the relevant chat message and gate with a one-time per-profile flag so it never re-fires (same pattern already used in this codebase for a different one-time migration flag - see DEATH_MESSAGE_NAME_TOKEN_MIGRATED_KEY in CatastrophicEventsPlugin.java).\n\nExplicitly excluded from this pass (discussed and deferred with the user): quest point cape, achievement diary cape, music cape, and full diary completion - these all require reading existing possession/completion state rather than reacting to a fresh in-game event, so a veteran player who already had them before installing the plugin would falsely trigger. Also excluded: collection log milestones, combat achievement tiers, boss/raid KC thresholds, slayer streak, clue rewards, Bounty Hunter KC, Soul Reaper axe, and the Anniversary award - all deferred to a later tier for a future task.\n\nWire-level requirements to match what catabot now expects:\n- Two new AlertKind enum values in src/main/java/com/catastrophic/events/alerts/AlertKind.java: ACCOMPLISHMENT(\"accomplishment\") and PET(\"pet\").\n- Two new opt-in config toggles in CatastrophicEventsConfig.java, following the existing pattern (all toggles default false): accomplishmentSharingEnabled (\"Share account accomplishments\") and petDropSharingEnabled (\"Share pet drops\"). This was an explicit requirement from the user - these alerts must be opt-in like every other alert type in this plugin.\n- AlertsApiClient.sendAlert(...) needs to support sending an optional \"title\" field alongside kind/summary, since catabot's /alerts now accepts it (e.g. title=\"99 Fishing\", title=\"Twisted Bow\") for a future Discord-embeds pass to use as an embed title/thumbnail key. Keep existing call sites (loot, death, coffer) working unchanged if they don't pass a title.\n- New listeners need to be registered/unregistered in CatastrophicEventsPlugin.java's startUp()/shutDown(), following the existing eventBus.register()/unregister() pattern for lootAlertListener/deathAlertListener/cofferAlertListener.\n\nNot in scope for this task: the Discord-embeds rendering itself (bot-side, future task), and any of the deferred Tier 2/3 items listed above."
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Add five new single-purpose listener classes under src/main/java/com/catastrophic/events/alerts/, following the exact pattern already established by LootAlertListener/DeathAlertListener/CofferAlertListener. Extend AlertKind, CatastrophicEventsConfig, and AlertsApiClient to support the two new kinds and the optional title field without touching any existing call sites' signatures, then wire the five listeners into CatastrophicEventsPlugin's startUp()/shutDown().",
+    "steps": [
+      "AlertKind.java - add ACCOMPLISHMENT(\"accomplishment\") and PET(\"pet\")",
+      "CatastrophicEventsConfig.java - add accomplishmentSharingEnabled and petDropSharingEnabled toggles, both default false",
+      "AlertsApiClient.java - add title-aware sendAlert overloads, refactor existing overloads to delegate with title=null so loot/death/coffer call sites don't change",
+      "SkillMilestoneListener.java (new) - StatChanged, in-memory per-skill previous-level/xp tracking, detects 99s / 25m skill XP / 50m total XP / total level milestones / max cape",
+      "QuestMilestoneListener.java (new) - QuestCompleted, fixed allowlist of 7 GM/special quests (verify Blood Moon Rises enum constant exists during execution)",
+      "AccomplishmentLootListener.java (new) - NpcLootReceived/PlayerLootReceived, fixed item-ID allowlist (Tbow, Scythe, Shadow, Blood Torva ornament kit) with screenshot, separate from LootAlertListener/lootSharingEnabled",
+      "PetDropListener.java (new) - ChatMessage regex for the pet-obtained message",
+      "OneTimeRewardListener.java (new, renamed from AchievementCapeListener) - ChatMessage regex per reward, one-time ConfigManager flag per reward so it never re-fires",
+      "CatastrophicEventsPlugin.java - inject and register/unregister all five new listeners in startUp()/shutDown()",
+      "Manual verification via ./gradlew run (no automated test suite exists - TD-001); document anything not feasibly triggerable live via code review instead"
+    ],
+    "planned_at": "2026-09-16T19:14:48Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-09-16T20:10:00Z",
+    "notes": "All plan steps completed. No test framework in this repo (TD-001) - verified via clean `./gradlew build` (compile + jar + test-compile), a live client boot with zero Guice/DI errors (confirmed twice: once after initial execution, again after the QuestMilestoneListener wiring refactor), and jshell sanity checks on the regex/milestone-math logic. No staging branch exists in this repo either, so that DoD item is N/A. One fix applied during verification: QuestMilestoneListener moved from a per-GameTick EventBus subscription to a checkQuests() method called from CatastrophicEventsPlugin's existing 45s pollEvents() loop, per developer feedback - not a performance problem, but the right architectural fit given quest completion has no real-time urgency. Unverified-live UAT items (an actual 99/quest/mega-rare/cape/pet occurring for real) are accepted as 'watch for it live' rather than blocking, given they can't be manufactured in this session.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-09-16T19:08:19Z",
+    "updated_at": "2026-09-16T20:10:00Z"
+  }
+}
