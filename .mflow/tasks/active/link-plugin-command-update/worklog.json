@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "link-plugin-command-update",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260916-135900",
+    "started_at": "2026-09-16T13:59:00Z",
+    "updated_at": "2026-09-16T14:02:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "note",
+      "timestamp": "2026-09-16T14:02:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "All 4 plan steps completed on branch bugfix/link-plugin-command-update; ./gradlew compileJava succeeded.",
+      "detail": "Updated the three live user-facing !link references to /link-plugin: CatastrophicEventsConfig.java's token config description, CatastrophicEventsPanel.java's NOT_LINKED state message, and README.md's local-run instructions (also noted the RSN option and WOM/Discord membership gating in the README wording since /link-plugin's behavior differs meaningfully from the old prefix command). poc-runelite-plugin.md's !link reference was deliberately left untouched per the intake decision (frozen historical doc, already flagged stale via KI-004).",
+      "related_step": "Steps 1-4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "note",
+      "timestamp": "2026-09-16T14:54:52Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "Definition of done and concerns check confirmed. Dev UAT: config description confirmed live via two ./gradlew run sessions; NOT_LINKED panel message not directly observed live (developer already linked both times) but accepted as verified given it's the identical string-swap pattern in the same code path, already confirmed correct in source and compiling clean.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

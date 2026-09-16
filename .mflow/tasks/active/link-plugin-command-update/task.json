@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-09-16T14:02:00Z"
+  },
+  "task_id": "link-plugin-command-update",
+  "track": "JDI",
+  "status": "qa_review",
+  "project_type": "personal",
+  "branch": "bugfix/link-plugin-command-update",
+  "request": {
+    "summary": "Update the three live/user-facing !link references (config description, NOT_LINKED panel message, README dev-setup instructions) to reference the bot's new /link-plugin slash command instead of the retired !link prefix command.",
+    "submitted_at": "2026-09-16T13:57:55Z",
+    "raw_requirements": "Fix stale \"!link\" references in the RuneLite plugin - the bot's linking command changed from the legacy !link prefix command to a /link-plugin slash command (which now also requires the RSN as a required option and gates on WOM clan + Discord membership - see catabot/src/commands/link-plugin/index.ts). Four references to the old !link command were found in this repo:\n\n1. src/main/java/com/catastrophic/events/CatastrophicEventsConfig.java:14 - the \"Plugin token\" config item's description text, shown in RuneLite's config UI.\n2. src/main/java/com/catastrophic/events/ui/CatastrophicEventsPanel.java:152 - the NOT_LINKED state message shown directly in the plugin's side panel to any user who hasn't linked yet - this is the most user-visible of the four.\n3. README.md:130 - the \"Running it locally\" dev setup instructions.\n4. poc-runelite-plugin.md:8 - the original scope/design doc, already flagged as generally stale in concerns.json (KI-004, \"should not be trusted for endpoint paths\"). Decision made during intake: leave this one alone - it's explicitly historical/frozen design documentation and KI-004 already warns not to trust it.\n\nUpdate the three live/user-facing references to reference /link-plugin instead of !link, accurately reflecting that it's now a slash command with an RSN option."
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Straightforward text-only fix: update the three live user-facing strings to reference /link-plugin (a slash command with a required rsn option) instead of the retired !link prefix command, then compile to confirm nothing else broke. poc-runelite-plugin.md is left alone per the intake decision.",
+    "steps": [
+      "Step 1 - src/main/java/com/catastrophic/events/CatastrophicEventsConfig.java:14 - change the \"Plugin token\" description from \"Paste the token DM'd to you by the !link command in Discord.\" to \"Paste the token DM'd to you by the /link-plugin command in Discord.\"",
+      "Step 2 - src/main/java/com/catastrophic/events/ui/CatastrophicEventsPanel.java:152 - change the NOT_LINKED message from \"Run !link in Discord, then paste the token it DMs you here via Event Setup below.\" to \"Run /link-plugin in Discord (with your RSN), then paste the token it DMs you here via Event Setup below.\"",
+      "Step 3 - README.md:130 - change `!link <rsn>` to `/link-plugin <rsn>`, adjusting surrounding wording since it's now a slash command, not a typed prefix command.",
+      "Step 4 - Manual QA: ./gradlew compileJava to confirm it compiles clean."
+    ],
+    "planned_at": "2026-09-16T13:58:44Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-09-16T14:54:52Z",
+    "notes": "Definition of done confirmed (all 4 plan steps complete, conventions followed, no unit tests since no test framework exists in this repo - TD-001, no staging branch in use here). Concerns check: none - pure string change. Dev UAT: config description confirmed live via ./gradlew run across two separate sessions (developer was already linked both times, so the NOT_LINKED panel message itself wasn't directly observed live, but it's the same one-line string-swap pattern in the same code path, verified correct in source and compiles clean). Developer accepted this reasoning rather than requiring a token-clear just to observe it.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-09-16T13:57:55Z",
+    "updated_at": "2026-09-16T14:02:00Z"
+  }
+}

@@ -127,8 +127,9 @@ real event data, including the Join flow.
    (`PLUGIN_API_PORT`, default `8080`), temporarily edit the `API_BASE`
    constant in both files and revert before committing.
 5. In the running client: open the plugin's panel, click the gear icon
-   ("Event Setup"), and paste a token obtained via the bot's `!link <rsn>`
-   command.
+   ("Event Setup"), and paste a token obtained via the bot's `/link-plugin`
+   slash command (takes your RSN as a required option; gated on WOM clan and
+   Discord membership).
 
 ## Known gaps / things to confirm against the live API
 
