@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "concerns",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-09-12T19:15:00Z"
+    "updated_at": "2026-09-16T19:46:36Z"
   },
   "tech_debt": [
     {
@@ -85,6 +85,11 @@
       "id": "WRN-005",
       "summary": "AlertsApiClient duplicates EventsApiClient's 401/unsuccessful/network error-classification logic inline instead of sharing a helper (logged as an anticipated deviation, WL-5 on discord-loot-death-coffer-alerts) - a future change to that classification logic has to be made in two places or it'll silently drift.",
       "area": "api/AlertsApiClient.java, api/EventsApiClient.java"
+    },
+    {
+      "id": "WRN-006",
+      "summary": "PetDropListener and OneTimeRewardListener (fire cape / infernal cape / Dizana's quiver) match on best-effort recalled chat-message wording that has not been confirmed against a live client actually producing those messages (can't fake a real pet drop or Inferno completion in dev). If the wording is off, the affected alert would silently just never fire - no error, no crash. Confirm against real chat log text (or a clan member's report) the first time each of these actually fires, and tighten the Pattern if it turns out wrong.",
+      "area": "alerts/PetDropListener.java, alerts/OneTimeRewardListener.java"
     }
   ],
   "dependencies_at_risk": [

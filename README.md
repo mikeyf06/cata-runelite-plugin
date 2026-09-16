@@ -11,8 +11,9 @@ paths there are stale, see below).
 ## What's implemented
 
 - Config panel: plugin token (secret field), loot-sharing and
-  death-screenshot toggles (both opt-in), a custom death message field, and
-  an event chat reminders toggle (opt-in)
+  death-screenshot toggles (both opt-in), a custom death message field, an
+  event chat reminders toggle (opt-in), and accomplishment-sharing /
+  pet-drop-sharing toggles (both opt-in)
 - Poll loop (45s) hitting `GET {apiBase}/events`
 - Side panel: not-linked state, connection-error state, All Events / My Events
   tabs, a featured "hero" card for the soonest joined event, compact rows for
@@ -27,8 +28,8 @@ paths there are stale, see below).
   (opt-in)
 - Inline "Event Setup" view (gear icon) for editing the plugin token without
   leaving the panel — writes straight to `ConfigManager`
-- Discord alerts: loot sharing, death screenshots, and clan coffer activity —
-  see "Discord alerts" below
+- Discord alerts: loot sharing, death screenshots, clan coffer activity,
+  account accomplishments, and pet drops — see "Discord alerts" below
 
 Out of scope for this POC (see `poc-runelite-plugin.md`): auto check-in,
 join-VC button, LFC browsing, `!cevents` rendering. These are represented
@@ -37,11 +38,14 @@ hidden, since the mocked-up design calls for them.
 
 ## Discord alerts
 
-The plugin posts to Discord for three kinds of moments, via a new
+The plugin posts to Discord for five kinds of moments, via a
 `POST {apiBase}/alerts` endpoint on the bot (see `alerts/` and
 `api/AlertsApiClient.java`). The plugin never holds Discord channel IDs or
-webhook URLs — the bot maps `kind` (`loot`/`death`/`coffer`) to a channel on
-its own side.
+webhook URLs — the bot maps `kind` (`loot`/`death`/`coffer`/`accomplishment`/`pet`)
+to a channel on its own side. Accomplishment and pet alerts also send an
+optional `title` field (e.g. `"99 Fishing"`, `"Twisted Bow"`) for a future
+Discord-embeds pass to key off of — `loot`/`death`/`coffer` don't send one and
+are unaffected.
 
 - **Loot sharing** — fires on any single non-stackable item worth 1.5m gp or
   more (`ItemComposition.isStackable() == false`, GE value via
@@ -58,6 +62,22 @@ its own side.
   `AlertsApiClient.sendAlert(...)` is called via the text-only overload
   (`ScreenshotCapture` isn't used here). Always on, no config toggle (clan
   business, not personal activity — see the task's decision log).
+- **Account accomplishments** — skill/XP milestones (99s, every 25m skill
+  XP past 99, every 50m total XP, total level 1750/2000/2200, max cape),
+  Grandmaster/special quest completions (checked via `Quest.getState()` on
+  the existing 45s poll loop, not per-tick — there's no `QuestCompleted`
+  event in this RuneLite version), a fixed mega-rare drop allowlist (Tbow,
+  Scythe, Shadow, Ancient blood ornament kit — separate from the generic
+  loot-value-threshold sharing above), and first-time fire cape / infernal
+  cape / Dizana's quiver (each one-time only, gated by its own persisted
+  flag so it can never re-fire). Toggle: "Share account accomplishments" in
+  config, default **off** (opt-in). Deliberately excludes the achievement
+  diary cape, quest point cape, music cape, and full diary completion —
+  those are all *state checks* rather than fresh events, so a veteran
+  player who already had them before installing the plugin would falsely
+  trigger.
+- **Pet drops** — fires on the pet-obtained chat message. Toggle: "Share
+  pet drops" in config, default **off** (opt-in).
 
 Delivery goes through `catabot`'s `POST /alerts` endpoint, which owns the
 `kind`-to-channel-ID mapping server-side. Loot and death were live-verified
@@ -88,13 +108,18 @@ src/main/java/com/catastrophic/events/
   CatastrophicEventsPlugin.java   - plugin entrypoint, poll loop, reminders
   CatastrophicEventsConfig.java   - config panel fields
   api/EventsApiClient.java        - OkHttp calls to the bot's plugin API
-  api/AlertsApiClient.java        - multipart POST {apiBase}/alerts (screenshot + summary)
+  api/AlertsApiClient.java        - multipart POST {apiBase}/alerts (screenshot + summary + optional title)
   api/dto/                        - Gson response/request shapes (ids are String - Mongo ObjectIds)
-  alerts/AlertKind.java           - loot|death|coffer, matches the bot's `kind` field
+  alerts/AlertKind.java           - loot|death|coffer|accomplishment|pet, matches the bot's `kind` field
   alerts/ScreenshotCapture.java   - captures the current client frame as PNG bytes
   alerts/LootAlertListener.java   - @Subscribe on NpcLootReceived/PlayerLootReceived
   alerts/DeathAlertListener.java  - @Subscribe on ActorDeath (local player only)
   alerts/CofferAlertListener.java - @Subscribe on ChatMessage (clan coffer text)
+  alerts/SkillMilestoneListener.java     - @Subscribe on StatChanged (99s, XP/total-level milestones, max cape)
+  alerts/QuestMilestoneListener.java     - checkQuests(), called from the poll loop, not EventBus - no QuestCompleted event exists
+  alerts/AccomplishmentLootListener.java - @Subscribe on NpcLootReceived/PlayerLootReceived (fixed mega-rare allowlist)
+  alerts/PetDropListener.java            - @Subscribe on ChatMessage (pet-obtained message)
+  alerts/OneTimeRewardListener.java      - @Subscribe on ChatMessage (fire cape/infernal cape/Dizana's quiver, one-time only)
   ui/CatastrophicEventsPanel.java - top-level panel: header, tabs, footer, state routing
   ui/EventHeroCard.java           - featured/expanded card (My Events tab)
   ui/EventCompactRow.java         - compact list row (All Events tab, secondary joined events)
@@ -145,3 +170,10 @@ real event data, including the Join flow.
   against.
 - `catabot-web`'s `/api/plugin/*` routes still exist as of this writing but are
   being removed — don't rely on them going forward.
+- `PetDropListener` and `OneTimeRewardListener`'s chat-message regex patterns
+  are best-effort, not confirmed against a live client actually producing
+  those messages (a real pet drop or Inferno completion can't be faked in
+  dev). If the wording turns out to be off, the affected alert just silently
+  never fires — no crash, no error. Confirm against real chat text the first
+  time each one fires for real, and tighten the pattern if needed (see
+  WRN-006 in `.mflow/concerns.json`).

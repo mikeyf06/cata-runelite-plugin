@@ -6,7 +6,7 @@
     "project_id": "cata-runelite-plugin",
     "session_id": "sess-20260916-191718",
     "started_at": "2026-09-16T19:17:18Z",
-    "updated_at": "2026-09-16T20:10:00Z"
+    "updated_at": "2026-09-16T19:46:36Z"
   },
   "entries": [
     {
@@ -116,6 +116,17 @@
       "source": "auto",
       "summary": "Verification passed",
       "detail": "Full `./gradlew build` clean (compile + jar + test-compile). Live client boot re-confirmed with zero DI errors after the QuestMilestoneListener refactor. Definition of done confirmed except the staging-branch item (N/A, no staging branch exists in this repo). Live-only UAT items (real 99/quest/mega-rare/cape/pet) accepted as watch-for-it-live rather than blocking.",
+      "related_step": null,
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-011",
+      "type": "note",
+      "timestamp": "2026-09-16T19:46:36Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Task shipped to production",
+      "detail": "No PR - two direct fast-forward merges to main per developer instruction: the feature itself (883f22f), then a version bump to 1.2 in runelite-plugin.properties (44cc229, previously 1.0.1) so the RuneLite Plugin Hub has a new version to pick up. Developer will handle actually opening/publishing the Plugin Hub update PR (to runelite/plugin-hub) separately outside this task - main being updated is as far as this task's shipping goes.",
       "related_step": null,
       "blocker": null
     }
