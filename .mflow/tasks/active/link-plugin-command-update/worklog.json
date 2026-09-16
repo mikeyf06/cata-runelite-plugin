@@ -30,6 +30,17 @@
       "detail": "Definition of done and concerns check confirmed. Dev UAT: config description confirmed live via two ./gradlew run sessions; NOT_LINKED panel message not directly observed live (developer already linked both times) but accepted as verified given it's the identical string-swap pattern in the same code path, already confirmed correct in source and compiling clean.",
       "related_step": null,
       "blocker": null
+    },
+    {
+      "entry_id": "WL-003",
+      "type": "note",
+      "timestamp": "2026-09-16T16:07:10Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Task shipped to production",
+      "detail": "No PR - direct merge per established pattern for this repo (no gh CLI available). Commit 7421926 on bugfix/link-plugin-command-update, merged into main via --no-ff (beea792), pushed to origin/main.",
+      "related_step": null,
+      "blocker": null
     }
   ]
 }

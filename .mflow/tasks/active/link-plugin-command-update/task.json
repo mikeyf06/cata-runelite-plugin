@@ -7,7 +7,7 @@
   },
   "task_id": "link-plugin-command-update",
   "track": "JDI",
-  "status": "qa_review",
+  "status": "deployed",
   "project_type": "personal",
   "branch": "bugfix/link-plugin-command-update",
   "request": {
@@ -34,9 +34,10 @@
   },
   "ship": {
     "pr_link": null,
-    "shipped_at": null,
-    "deployed_at": null,
-    "environment": null
+    "shipped_at": "2026-09-16T16:07:10Z",
+    "deployed_at": "2026-09-16T16:07:10Z",
+    "environment": "production",
+    "notes": "No PR - direct merge per established pattern for this repo (no gh CLI available, solo project, no staging branch or reviewers). Commit 7421926 on bugfix/link-plugin-command-update, merged to main via --no-ff at beea792, pushed to origin/main."
   },
   "archive": {
     "archived_at": null,
@@ -44,6 +45,6 @@
   },
   "timestamps": {
     "created_at": "2026-09-16T13:57:55Z",
-    "updated_at": "2026-09-16T14:02:00Z"
+    "updated_at": "2026-09-16T16:07:10Z"
   }
 }
