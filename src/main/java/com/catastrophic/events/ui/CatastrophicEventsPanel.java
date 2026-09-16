@@ -149,7 +149,7 @@ public class CatastrophicEventsPanel extends PluginPanel
 		else if (state == State.NOT_LINKED)
 		{
 			body.add(message("Not linked",
-				"Run !link in Discord, then paste the token it DMs you here via Event Setup below."));
+				"Run /link-plugin in Discord (with your RSN), then paste the token it DMs you here via Event Setup below."));
 		}
 		else if (state == State.CONNECTION_ERROR)
 		{

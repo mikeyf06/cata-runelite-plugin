@@ -11,7 +11,7 @@ public interface CatastrophicEventsConfig extends Config
 		position = 1,
 		keyName = "token",
 		name = "Plugin token",
-		description = "Paste the token DM'd to you by the !link command in Discord.",
+		description = "Paste the token DM'd to you by the /link-plugin command in Discord.",
 		secret = true
 	)
 	default String token()
