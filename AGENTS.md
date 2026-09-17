@@ -52,6 +52,32 @@ It will load `task.json` + `worklog.json` and give you a concise briefing on wha
 Flow: `feature → staging → main`
 Commit format: `feat:`, `fix:`, `chore:`, `hotfix:`, `refactor:`, `test:`, `docs:`
 
+## Running it locally
+
+Verified end-to-end: `./gradlew run` boots a real RuneLite client (JDK 11,
+Gradle 8.10.2 via the committed wrapper) with the plugin loaded, logged in via
+a saved Jagex session, successfully polling a live backend and rendering real
+event data, including the Join flow.
+
+1. Install a JDK 11 (e.g. [Eclipse Temurin 11](https://adoptium.net/temurin/releases/?version=11)).
+2. Open this folder in IntelliJ IDEA as a Gradle project (it'll use the
+   committed wrapper automatically), or run `./gradlew run` from the CLI.
+3. Run `CatastrophicEventsPluginTest.main()` (via IDE or the `run` Gradle
+   task). This boots a full RuneLite client in developer mode with the plugin
+   preloaded — no need to install it through the Plugin Hub. Developer mode
+   only works launching this way, not through the Jagex Launcher; see
+   `Using Jagex Accounts` on the RuneLite wiki for the `--insecure-write-credentials`
+   bridge if you need to test logged in as a real Jagex account.
+4. `EventsApiClient`/`AlertsApiClient` hardcode the production `catabot` URL
+   (`https://catabot-production.up.railway.app`) - there's no config field to
+   point the plugin at a local instance. To test against a local `catabot`
+   (`PLUGIN_API_PORT`, default `8080`), temporarily edit the `API_BASE`
+   constant in both files and revert before committing.
+5. In the running client: open the plugin's panel, click the gear icon
+   ("Event Setup"), and paste a token obtained via the bot's `/link-plugin`
+   slash command (takes your RSN as a required option; gated on WOM clan and
+   Discord membership).
+
 ## Do not
 
 - Edit `.mflow/` files directly — always use the mflow skills
