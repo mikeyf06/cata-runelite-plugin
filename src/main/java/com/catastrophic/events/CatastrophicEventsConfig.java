@@ -49,7 +49,7 @@ public interface CatastrophicEventsConfig extends Config
 	)
 	default String deathMessage()
 	{
-		return "";
+		return "$name Died.";
 	}
 
 	@ConfigItem(

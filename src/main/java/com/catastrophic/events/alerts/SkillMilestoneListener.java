@@ -5,47 +5,64 @@ import com.catastrophic.events.api.AlertsApiClient;
 import com.catastrophic.events.api.ApiCallback;
 import com.catastrophic.events.api.ApiErrorType;
 import com.google.common.base.Strings;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.Skill;
-import net.runelite.api.events.StatChanged;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.client.eventbus.Subscribe;
 
-/** Shares skill/XP/total-level milestones to Discord: 99s, 25m XP-past-99 milestones, 50m total XP milestones, total level milestones, and max cape. */
+/**
+ * Shares skill/XP/total-level milestones to Discord: 99s, 25m XP-past-99 milestones, 50m total XP
+ * milestones, total level milestones, and max cape. Entirely chat-message driven - no polling, no
+ * client-state baseline of any kind. Each of these messages only ever appears live, the moment the
+ * real achievement happens, so unlike the previous Quest.getState()/StatChanged-polling approach
+ * (which needed a "what did the player already have coming into this session" baseline that proved
+ * impossible to time correctly around login - confirmed live, twice, for both quests and skills) there
+ * is nothing to race against and nothing to get wrong.
+ */
 @Slf4j
 public class SkillMilestoneListener
 {
-	private static final long SKILL_XP_MILESTONE_STEP = 25_000_000L;
-	private static final long TOTAL_XP_MILESTONE_STEP = 50_000_000L;
-	private static final int[] TOTAL_LEVEL_MILESTONES = {1750, 2000, 2200};
 	private static final int MAX_TOTAL_LEVEL = 2277;
 
-	private final Client client;
+	// Confirmed live against a real client - exact Jagex wording (see task worklog for screenshots).
+	private static final Pattern SKILL_LEVEL_UP = Pattern.compile(
+		"Congratulations, you've just advanced your (?<skill>[A-Za-z]+) level\\. You are now level (?<level>\\d+)\\.");
+	private static final Pattern TOTAL_LEVEL_MILESTONE = Pattern.compile(
+		"Congratulations, you've reached a total level of (?<total>[\\d,]+)\\.");
+
+	// Best-effort guess, not confirmed against a live client - same caveat as PetDropListener/
+	// OneTimeRewardListener (concerns.json WRN-006). OSRS's native broadcast system may not actually
+	// announce round XP numbers at all, unlike level-ups and total level, which are confirmed real; if
+	// these never fire, that's the likely reason - tighten the wording or drop the feature once observed
+	// live (or not observed after a reasonable amount of play).
+	private static final Pattern SKILL_XP_MILESTONE = Pattern.compile(
+		"Congratulations, you've reached (?<xp>[\\d,]+) experience in (?<skill>[A-Za-z]+)\\.");
+	private static final Pattern TOTAL_XP_MILESTONE = Pattern.compile(
+		"Congratulations, you've reached (?<xp>[\\d,]+) total experience\\.");
+
 	private final CatastrophicEventsConfig config;
 	private final AlertsApiClient alertsApiClient;
 
-	// Baseline per skill is recorded, never alerted on, the first time each skill is observed this
-	// session - this is what stops a veteran account's pre-existing 99s/milestones from false-firing.
-	private final Map<Skill, Integer> previousLevel = new EnumMap<>(Skill.class);
-	private final Map<Skill, Long> previousXp = new EnumMap<>(Skill.class);
-	private Integer previousTotalLevel;
-	private Long previousTotalXp;
-
 	@Inject
-	public SkillMilestoneListener(Client client, CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
+	public SkillMilestoneListener(CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
 	{
-		this.client = client;
 		this.config = config;
 		this.alertsApiClient = alertsApiClient;
 	}
 
 	@Subscribe
-	public void onStatChanged(StatChanged event)
+	public void onChatMessage(ChatMessage event)
 	{
-		if (!config.accomplishmentSharingEnabled())
+		if (!config.accomplishmentSharingEnabled() || event.getType() != ChatMessageType.GAMEMESSAGE)
+		{
+			return;
+		}
+
+		String message = event.getMessage();
+		if (Strings.isNullOrEmpty(message))
 		{
 			return;
 		}
@@ -56,79 +73,69 @@ public class SkillMilestoneListener
 			return;
 		}
 
-		Skill skill = event.getSkill();
-		if (skill == Skill.OVERALL)
+		Matcher levelUp = SKILL_LEVEL_UP.matcher(message);
+		if (levelUp.find())
 		{
+			handleSkillLevelUp(token, levelUp);
 			return;
 		}
 
-		checkSkillMilestones(token, skill, event.getLevel(), event.getXp());
-		checkTotalMilestones(token);
-	}
-
-	private void checkSkillMilestones(String token, Skill skill, int level, long xp)
-	{
-		Integer prevLevel = previousLevel.put(skill, level);
-		Long prevXp = previousXp.put(skill, xp);
-
-		if (prevLevel == null || prevXp == null)
+		Matcher totalLevel = TOTAL_LEVEL_MILESTONE.matcher(message);
+		if (totalLevel.find())
 		{
+			handleTotalLevelMilestone(token, totalLevel);
 			return;
 		}
 
-		if (prevLevel < 99 && level >= 99)
+		Matcher skillXp = SKILL_XP_MILESTONE.matcher(message);
+		if (skillXp.find())
 		{
-			post(token, String.format("reached 99 %s", skill.getName()), String.format("99 %s", skill.getName()));
+			handleSkillXpMilestone(token, skillXp);
+			return;
 		}
 
-		if (level >= 99)
+		Matcher totalXp = TOTAL_XP_MILESTONE.matcher(message);
+		if (totalXp.find())
 		{
-			long prevMilestone = prevXp / SKILL_XP_MILESTONE_STEP;
-			long currentMilestone = xp / SKILL_XP_MILESTONE_STEP;
-			if (currentMilestone > prevMilestone && currentMilestone > 0)
-			{
-				long milestoneXp = currentMilestone * SKILL_XP_MILESTONE_STEP;
-				post(token, String.format("reached %,d XP in %s", milestoneXp, skill.getName()),
-					String.format("%dm %s XP", currentMilestone * 25, skill.getName()));
-			}
+			handleTotalXpMilestone(token, totalXp);
 		}
 	}
 
-	private void checkTotalMilestones(String token)
+	private void handleSkillLevelUp(String token, Matcher matcher)
 	{
-		int totalLevel = client.getTotalLevel();
-		long totalXp = client.getOverallExperience();
-
-		Integer prevTotalLevel = previousTotalLevel;
-		Long prevTotalXp = previousTotalXp;
-		previousTotalLevel = totalLevel;
-		previousTotalXp = totalXp;
-
-		if (prevTotalLevel == null || prevTotalXp == null)
+		if (Integer.parseInt(matcher.group("level")) != 99)
 		{
 			return;
 		}
 
-		for (int threshold : TOTAL_LEVEL_MILESTONES)
-		{
-			if (prevTotalLevel < threshold && totalLevel >= threshold)
-			{
-				post(token, String.format("reached %,d Total Level", threshold), String.format("%,d Total Level", threshold));
-			}
-		}
+		String skillName = matcher.group("skill");
+		post(token, String.format("reached 99 %s", skillName), String.format("99 %s", skillName));
+	}
 
-		if (prevTotalLevel < MAX_TOTAL_LEVEL && totalLevel >= MAX_TOTAL_LEVEL)
+	private void handleTotalLevelMilestone(String token, Matcher matcher)
+	{
+		int total = Integer.parseInt(matcher.group("total").replace(",", ""));
+		if (total >= MAX_TOTAL_LEVEL)
 		{
 			post(token, "achieved max cape (all 99s)", "Max Cape");
 		}
-
-		long prevMilestone = prevTotalXp / TOTAL_XP_MILESTONE_STEP;
-		long currentMilestone = totalXp / TOTAL_XP_MILESTONE_STEP;
-		if (currentMilestone > prevMilestone && currentMilestone > 0)
+		else
 		{
-			long milestoneXp = currentMilestone * TOTAL_XP_MILESTONE_STEP;
-			post(token, String.format("reached %,d Total XP", milestoneXp), String.format("%dm Total XP", currentMilestone * 50));
+			post(token, String.format("reached %,d Total Level", total), String.format("%,d Total Level", total));
 		}
+	}
+
+	private void handleSkillXpMilestone(String token, Matcher matcher)
+	{
+		long xp = Long.parseLong(matcher.group("xp").replace(",", ""));
+		String skillName = matcher.group("skill");
+		post(token, String.format("reached %,d XP in %s", xp, skillName), String.format("%s XP milestone", skillName));
+	}
+
+	private void handleTotalXpMilestone(String token, Matcher matcher)
+	{
+		long xp = Long.parseLong(matcher.group("xp").replace(",", ""));
+		post(token, String.format("reached %,d Total XP", xp), "Total XP milestone");
 	}
 
 	private void post(String token, String summary, String title)

@@ -136,6 +136,7 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.register(deathAlertListener);
 		eventBus.register(cofferAlertListener);
 		eventBus.register(skillMilestoneListener);
+		eventBus.register(questMilestoneListener);
 		eventBus.register(accomplishmentLootListener);
 		eventBus.register(petDropListener);
 		eventBus.register(oneTimeRewardListener);
@@ -157,6 +158,7 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.unregister(deathAlertListener);
 		eventBus.unregister(cofferAlertListener);
 		eventBus.unregister(skillMilestoneListener);
+		eventBus.unregister(questMilestoneListener);
 		eventBus.unregister(accomplishmentLootListener);
 		eventBus.unregister(petDropListener);
 		eventBus.unregister(oneTimeRewardListener);
@@ -191,8 +193,24 @@ public class CatastrophicEventsPlugin extends Plugin
 
 	private void pollEvents()
 	{
-		questMilestoneListener.checkQuests();
+		// scheduleWithFixedDelay permanently kills this recurring task the moment any single
+		// invocation throws - so nothing below may be allowed to escape uncaught, or the panel
+		// gets stuck on its last state (typically the NOT_LINKED default) for the rest of the
+		// client session even with a perfectly valid token. Catches Throwable, not just Exception -
+		// confirmed live that RuneLite's own API can throw AssertionError (a client-thread violation),
+		// which Exception alone does not catch.
+		try
+		{
+			pollEventsUnsafe();
+		}
+		catch (Throwable t)
+		{
+			log.warn("Catastrophic Events poll cycle failed, will retry next cycle", t);
+		}
+	}
 
+	private void pollEventsUnsafe()
+	{
 		String token = config.token();
 		if (Strings.isNullOrEmpty(token))
 		{

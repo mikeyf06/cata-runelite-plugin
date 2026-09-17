@@ -63,6 +63,9 @@ class SettingsView extends JPanel
 	private static JTextField field(String initialValue)
 	{
 		JTextField field = new JTextField(initialValue == null ? "" : initialValue);
+		// Pre-fills with whatever's already saved (e.g. re-opening after a bad token) - select it
+		// so a paste replaces it outright instead of inserting at the caret and corrupting it.
+		field.selectAll();
 		field.setFont(CatastrophicTheme.smallFont().deriveFont(Font.PLAIN));
 		field.setBackground(CatastrophicTheme.CARD_BACKGROUND);
 		field.setForeground(CatastrophicTheme.TEXT);

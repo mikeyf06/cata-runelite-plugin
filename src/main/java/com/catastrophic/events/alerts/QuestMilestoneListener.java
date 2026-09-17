@@ -5,21 +5,29 @@ import com.catastrophic.events.api.AlertsApiClient;
 import com.catastrophic.events.api.ApiCallback;
 import com.catastrophic.events.api.ApiErrorType;
 import com.google.common.base.Strings;
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
+import net.runelite.client.eventbus.Subscribe;
 
 /**
  * Shares Grandmaster/special quest completions to Discord. There's no dedicated quest-completion
- * event in the RuneLite API (no QuestCompleted class), so state is checked via Quest.getState(Client).
- * A quest completion has no real-time urgency, so checkQuests() is called from
- * CatastrophicEventsPlugin's existing 45s pollEvents() loop rather than a new per-tick EventBus
- * subscription - same detection logic, no added per-tick overhead.
+ * event in the RuneLite API (no QuestCompleted class), and polling Quest.getState() on a timer proved
+ * unreliable in practice - it must run on the client thread (calling it from a background poll threw
+ * AssertionError every time), and quest state wasn't reliably settled by the exact moment
+ * GameStateChanged reports LOGGED_IN either (baselining there still false-fired for every tracked
+ * quest at once - confirmed live, twice). Detecting the login-completion chat message instead sidesteps
+ * both problems: it only ever fires for a real completion happening live in this session, so there is
+ * no "already-done" state to race against or baseline in the first place.
  */
 @Slf4j
 public class QuestMilestoneListener
@@ -34,14 +42,24 @@ public class QuestMilestoneListener
 		Quest.THE_BLOOD_MOON_RISES
 	);
 
+	// Best-effort recalled wording, not confirmed against a live client - same caveat as
+	// PetDropListener/OneTimeRewardListener (see concerns.json WRN-006). Tighten if it turns out wrong.
+	private static final Pattern QUEST_COMPLETE_MESSAGE = Pattern.compile(
+		"Congratulations, you have completed a quest", Pattern.CASE_INSENSITIVE);
+
 	private final Client client;
 	private final CatastrophicEventsConfig config;
 	private final AlertsApiClient alertsApiClient;
 
-	// Baseline per quest is recorded, never alerted on, the first time it's observed this session -
-	// same veteran-safety pattern as SkillMilestoneListener, so an already-completed quest never
-	// false-fires just because the plugin only just started polling it.
-	private final Map<Quest, QuestState> previousState = new EnumMap<>(Quest.class);
+	// Which tracked quests are already known finished, so the generic completion chat message (it
+	// doesn't name the quest) only ever reports whichever one(s) are newly FINISHED and not already in
+	// this set - never anything the player already had done coming into this session. Seeded once,
+	// a few ticks after login rather than immediately on it, to give quest state (which lagged behind
+	// the rest of login by a tick or more - also confirmed live) time to fully settle; only ever used to
+	// suppress already-known completions, never as the trigger to alert, so being a little late seeding
+	// it is harmless - nothing can complete a Grandmaster quest in the first few ticks after logging in.
+	private final Set<Quest> knownFinished = new HashSet<>();
+	private boolean baselineSeedPending;
 
 	@Inject
 	public QuestMilestoneListener(Client client, CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
@@ -51,10 +69,43 @@ public class QuestMilestoneListener
 		this.alertsApiClient = alertsApiClient;
 	}
 
-	/** Called from CatastrophicEventsPlugin.pollEvents() every ~45s - see class javadoc for why this isn't event-driven. */
-	public void checkQuests()
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged event)
+	{
+		if (event.getGameState() == GameState.LOGGED_IN)
+		{
+			baselineSeedPending = true;
+		}
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		if (!baselineSeedPending)
+		{
+			return;
+		}
+
+		baselineSeedPending = false;
+		for (Quest quest : TRACKED_QUESTS)
+		{
+			if (quest.getState(client) == QuestState.FINISHED)
+			{
+				knownFinished.add(quest);
+			}
+		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
 	{
 		if (!config.accomplishmentSharingEnabled())
+		{
+			return;
+		}
+
+		String message = event.getMessage();
+		if (Strings.isNullOrEmpty(message) || !QUEST_COMPLETE_MESSAGE.matcher(message).find())
 		{
 			return;
 		}
@@ -67,32 +118,27 @@ public class QuestMilestoneListener
 
 		for (Quest quest : TRACKED_QUESTS)
 		{
-			QuestState state = quest.getState(client);
-			QuestState prevState = previousState.put(quest, state);
-
-			if (prevState == null || prevState == QuestState.FINISHED)
+			if (knownFinished.contains(quest) || quest.getState(client) != QuestState.FINISHED)
 			{
 				continue;
 			}
 
-			if (state == QuestState.FINISHED)
-			{
-				String questName = quest.getName();
-				alertsApiClient.sendAlert(token, AlertKind.ACCOMPLISHMENT, String.format("completed %s", questName), questName,
-					new ApiCallback<Void>()
+			knownFinished.add(quest);
+			String questName = quest.getName();
+			alertsApiClient.sendAlert(token, AlertKind.ACCOMPLISHMENT, String.format("completed %s", questName), questName,
+				new ApiCallback<Void>()
+				{
+					@Override
+					public void onSuccess(Void result)
 					{
-						@Override
-						public void onSuccess(Void result)
-						{
-						}
+					}
 
-						@Override
-						public void onError(ApiErrorType type, String message)
-						{
-							log.debug("Quest accomplishment alert failed: {}", message);
-						}
-					});
-			}
+					@Override
+					public void onError(ApiErrorType type, String errorMessage)
+					{
+						log.debug("Quest accomplishment alert failed: {}", errorMessage);
+					}
+				});
 		}
 	}
 }
