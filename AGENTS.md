@@ -78,6 +78,124 @@ event data, including the Join flow.
    slash command (takes your RSN as a required option; gated on WOM clan and
    Discord membership).
 
+## What's implemented
+
+- Config panel: plugin token (secret field), loot-sharing and
+  death-screenshot toggles (both opt-in), a custom death message field, an
+  event chat reminders toggle (opt-in), and accomplishment-sharing /
+  pet-drop-sharing toggles (both opt-in)
+- Poll loop (45s) hitting `GET {apiBase}/events`
+- Side panel: not-linked state, connection-error state, All Events / My Events
+  tabs, a featured "hero" card for the soonest joined event, compact rows for
+  everything else
+- Join button → `POST {apiBase}/signup`, updates in place on success/failure
+- Discord deep-link button per event, and a general "open Discord server"
+  footer button, both using a hardcoded guild ID (`DISCORD_GUILD_ID` in
+  `CatastrophicEventsPlugin.java`) - not user-configurable
+- Private chatbox reminders at T-3h / T-1h / T-5min, deduped per event+milestone,
+  plus a once-per-session "here's what you're signed up for" summary - both
+  gated behind the "Event chat reminders" config toggle, default **off**
+  (opt-in)
+- Inline "Event Setup" view (gear icon) for editing the plugin token without
+  leaving the panel — writes straight to `ConfigManager`
+- Discord alerts: loot sharing, death screenshots, clan coffer activity,
+  account accomplishments, and pet drops — see "Discord alerts" below
+
+Out of scope for this POC (see `poc-runelite-plugin.md`): auto check-in,
+join-VC button, LFC browsing, `!cevents` rendering. These are represented
+in the "My Events" hero card as visible-but-disabled rows ("Coming soon"), not
+hidden, since the mocked-up design calls for them.
+
+## Discord alerts
+
+The plugin posts to Discord for five kinds of moments, via a
+`POST {apiBase}/alerts` endpoint on the bot (see `alerts/` and
+`api/AlertsApiClient.java`). The plugin never holds Discord channel IDs or
+webhook URLs — the bot maps `kind` (`loot`/`death`/`coffer`/`accomplishment`/`pet`)
+to a channel on its own side. Accomplishment and pet alerts also send an
+optional `title` field (e.g. `"99 Fishing"`, `"Twisted Bow"`) for a future
+Discord-embeds pass to key off of — `loot`/`death`/`coffer` don't send one and
+are unaffected.
+
+- **Loot sharing** — fires on any single non-stackable item worth 1.5m gp or
+  more (`ItemComposition.isStackable() == false`, GE value via
+  `ItemManager.getItemPrice`), from either NPC or player (PK) loot. Posts a
+  screenshot plus a text summary. Toggle: "Share big loot drops" in config,
+  default **off** (opt-in).
+- **Death screenshots** — fires when the local player dies. Posts a
+  screenshot plus text. Toggle: "Share death screenshots" in config, default
+  **off** (opt-in). The text defaults to "Died." but can be customized via
+  the "Death message" config field (e.g. "died being silly").
+- **Clan coffer activity** — fires on clan-chat messages that look like a
+  coffer deposit/withdraw. **Text only, no screenshot** — the raw chat
+  message already names the player who deposited/withdrew, so
+  `AlertsApiClient.sendAlert(...)` is called via the text-only overload
+  (`ScreenshotCapture` isn't used here). Always on, no config toggle (clan
+  business, not personal activity — see the task's decision log).
+- **Account accomplishments** — skill/XP milestones (99s, every 25m skill
+  XP past 99, every 50m total XP, total level 1750/2000/2200, max cape),
+  Grandmaster/special quest completions (checked via `Quest.getState()` on
+  the existing 45s poll loop, not per-tick — there's no `QuestCompleted`
+  event in this RuneLite version), a fixed mega-rare drop allowlist (Tbow,
+  Scythe, Shadow, Ancient blood ornament kit — separate from the generic
+  loot-value-threshold sharing above), and first-time fire cape / infernal
+  cape / Dizana's quiver (each one-time only, gated by its own persisted
+  flag so it can never re-fire). Toggle: "Share account accomplishments" in
+  config, default **off** (opt-in). Deliberately excludes the achievement
+  diary cape, quest point cape, music cape, and full diary completion —
+  those are all *state checks* rather than fresh events, so a veteran
+  player who already had them before installing the plugin would falsely
+  trigger.
+- **Pet drops** — fires on the pet-obtained chat message. Toggle: "Share
+  pet drops" in config, default **off** (opt-in).
+
+Delivery goes through `catabot`'s `POST /alerts` endpoint, which owns the
+`kind`-to-channel-ID mapping server-side. Loot and death were live-verified
+end-to-end against production; the coffer text-only change depends on a
+companion catabot change (tracked separately in that repo's own `.mflow`)
+to make the `image` field optional for `kind=coffer` and to stop prefixing
+the coffer message with the reporting client's own RSN (which names the
+observer, not the actual depositor/withdrawer).
+
+## Endpoint paths (bot, not website)
+
+The bot's routes have no `/api/plugin` prefix, unlike the website's original
+routes documented in `poc-website.md`:
+
+- `GET {apiBase}/events`
+- `POST {apiBase}/signup`
+- `POST {apiBase}/checkin` (not called by the plugin yet - out of scope per above)
+
+Auth is unchanged: `Authorization: Bearer <token>`, 401 on missing/invalid/revoked.
+
+## Project layout
+
+Standard RuneLite external-plugin layout (matches
+[runelite/example-plugin](https://github.com/runelite/example-plugin)). See
+[`.mflow/module-map.md`](.mflow/module-map.md) for the file-by-file breakdown.
+
+## Known gaps / things to confirm against the live API
+
+- No endpoint returns a Discord guild ID, so the Discord deep-link URL
+  (`discord.com/channels/{guild}/{channel}`) uses a hardcoded constant
+  (`DISCORD_GUILD_ID`) rather than a config item - fine for this single clan's
+  plugin, but not something another server could reuse without a source change.
+- No `host` field in the events response yet (bot's `Event` model has
+  `hostDiscordId`, but `GET /events` doesn't return it) — both card styles
+  drop the "Host" row rather than show nothing/fake data.
+- No "expected world" field on events yet, so the hero card's "World" row and
+  any future auto-check-in logic have nothing to compare `client.getWorld()`
+  against.
+- `catabot-web`'s `/api/plugin/*` routes still exist as of this writing but are
+  being removed — don't rely on them going forward.
+- `PetDropListener` and `OneTimeRewardListener`'s chat-message regex patterns
+  are best-effort, not confirmed against a live client actually producing
+  those messages (a real pet drop or Inferno completion can't be faked in
+  dev). If the wording turns out to be off, the affected alert just silently
+  never fires — no crash, no error. Confirm against real chat text the first
+  time each one fires for real, and tighten the pattern if needed (see
+  WRN-006 in `.mflow/concerns.json`).
+
 ## Do not
 
 - Edit `.mflow/` files directly — always use the mflow skills
