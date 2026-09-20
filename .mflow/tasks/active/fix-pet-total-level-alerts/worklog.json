@@ -52,6 +52,28 @@
       "detail": "Developer confirmed dev UAT cannot be performed pre-ship: pet drops and total-level thresholds are real-game-only events not reproducible in this environment. Verification is based on ./gradlew compileJava (BUILD SUCCESSFUL), convention adherence, and no open blockers/new concerns. Developer will confirm the 8-item UAT checklist (pet screenshot, 1750/2000/2200 screenshot alerts, max-cape/other-threshold suppression, regression of untouched skill/XP alerts, config toggle gating) against a live client after this ships.",
       "related_step": "Step 4",
       "blocker": null
+    },
+    {
+      "entry_id": "WL-005",
+      "type": "deviation",
+      "timestamp": "2026-09-20T01:45:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Shipped directly to main with no PR, bypassing the documented feature/bugfix -> staging -> main flow.",
+      "detail": "Developer explicitly requested skipping the PR and staging steps entirely: 'just get it into main'. Branch bugfix/fix-pet-total-level-alerts was fast-forward merged straight into main (commit 628180b) and pushed, then the branch was deleted locally and on origin. No PR link exists for this task as a result.",
+      "related_step": "ship-task",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-006",
+      "type": "note",
+      "timestamp": "2026-09-20T01:45:00Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Task shipped to production",
+      "detail": "Fast-forward merged bugfix/fix-pet-total-level-alerts into main at commit 628180b and pushed to origin/main. No PR was raised (see WL-005).",
+      "related_step": null,
+      "blocker": null
     }
   ]
 }

@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "modules",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-09-16T19:46:36Z"
+    "updated_at": "2026-09-20T01:50:00Z"
   },
   "entry_points": [
     "src/main/java/com/catastrophic/events/CatastrophicEventsPlugin.java",
@@ -63,7 +63,7 @@
       "name": "Alerts",
       "path": "src/main/java/com/catastrophic/events/alerts",
       "type": "service",
-      "responsibility": "Game-event listeners that detect loot/death/clan-coffer/accomplishment/pet moments client-side and hand off to AlertsApiClient for delivery to Discord via catabot. Most are @Subscribe on RuneLite's EventBus; QuestMilestoneListener is the one exception (see its key_files entry). Loot, death, and the mega-rare accomplishment allowlist capture a screenshot first; everything else posts text only.",
+      "responsibility": "Game-event listeners that detect loot/death/clan-coffer/accomplishment/pet moments client-side and hand off to AlertsApiClient for delivery to Discord via catabot. Most are @Subscribe on RuneLite's EventBus; QuestMilestoneListener is the one exception (see its key_files entry). Loot, death, pet drops, the mega-rare accomplishment allowlist, and 1750/2000/2200 total-level milestones capture a screenshot first; coffer, quest, other skill/XP milestones, and one-time-reward alerts post text only.",
       "entry_points": ["LootAlertListener.java", "DeathAlertListener.java", "CofferAlertListener.java", "SkillMilestoneListener.java", "QuestMilestoneListener.java", "AccomplishmentLootListener.java", "PetDropListener.java", "OneTimeRewardListener.java"],
       "key_files": [
         { "file": "AlertKind.java", "purpose": "LOOT/DEATH/COFFER/ACCOMPLISHMENT/PET enum; wireValue() matches the bot's `kind` field." },
@@ -71,10 +71,10 @@
         { "file": "LootAlertListener.java", "purpose": "@Subscribe on NpcLootReceived/PlayerLootReceived; filters to non-stackable items worth >= 1.5m gp (ItemManager.getItemPrice); gated on config.lootSharingEnabled() (default off)." },
         { "file": "DeathAlertListener.java", "purpose": "@Subscribe on ActorDeath, local player only; gated on config.deathScreenshotsEnabled() (default off); uses config.deathMessage() if set, else \"Died.\"" },
         { "file": "CofferAlertListener.java", "purpose": "@Subscribe on ChatMessage (ChatMessageType.CLAN_MESSAGE only - the system-broadcast type, not player-typed CLAN_CHAT); regex-matches coffer deposit/withdraw text; posts via AlertsApiClient's text-only sendAlert overload (no ScreenshotCapture dependency); always on, no config gate." },
-        { "file": "SkillMilestoneListener.java", "purpose": "@Subscribe on StatChanged; tracks per-skill previous level/XP plus total level/XP (via Client.getTotalLevel()/getOverallExperience(), not a Skill.OVERALL StatChanged event) in-memory, never alerting on a skill's first observation this session (avoids false-firing on a veteran account's pre-existing 99s). Detects 99s, every 25m skill-XP milestone past 99, every 50m total-XP milestone, total level 1750/2000/2200, and max cape (2277). Gated on accomplishmentSharingEnabled." },
+        { "file": "SkillMilestoneListener.java", "purpose": "@Subscribe on StatChanged; tracks per-skill previous level/XP plus total level/XP (via Client.getTotalLevel()/getOverallExperience(), not a Skill.OVERALL StatChanged event) in-memory, never alerting on a skill's first observation this session (avoids false-firing on a veteran account's pre-existing 99s). Detects 99s, every 25m skill-XP milestone past 99, and every 50m total-XP milestone (all text-only). Total level milestones fire only for exactly 1750/2000/2200, each with a ScreenshotCapture screenshot - all other totals, including the previous max-cape (2277) special case, no longer alert. Gated on accomplishmentSharingEnabled." },
         { "file": "QuestMilestoneListener.java", "purpose": "No EventBus @Subscribe - there is no QuestCompleted event in this RuneLite version (confirmed by extracting the pinned client/runelite-api jars). Exposes checkQuests(), called from CatastrophicEventsPlugin.pollEvents()'s 45s loop, which reads Quest.getState(Client) for a fixed allowlist of 7 GM/special quests and tracks previous state per quest the same veteran-safe way as SkillMilestoneListener. Gated on accomplishmentSharingEnabled." },
         { "file": "AccomplishmentLootListener.java", "purpose": "@Subscribe on NpcLootReceived/PlayerLootReceived, same events as LootAlertListener but a fixed item-ID allowlist (Twisted bow, Scythe of vitur, Tumeken's shadow, Ancient blood ornament kit) regardless of value - deliberately separate from LootAlertListener/lootSharingEnabled (see architecture.json key_decisions). Captures a screenshot via ScreenshotCapture. Gated on accomplishmentSharingEnabled." },
-        { "file": "PetDropListener.java", "purpose": "@Subscribe on ChatMessage; regex matches both known pet-obtained message families (boss/minigame pets and skilling pets). Not filtered by ChatMessageType - wording unverified against a live client, see WRN-006. Gated on petDropSharingEnabled." },
+        { "file": "PetDropListener.java", "purpose": "@Subscribe on ChatMessage; regex matches both known pet-obtained message families (boss/minigame pets and skilling pets). Not filtered by ChatMessageType - wording unverified against a live client, see WRN-006. Captures a screenshot via ScreenshotCapture and attaches it to the alert. Gated on petDropSharingEnabled." },
         { "file": "OneTimeRewardListener.java", "purpose": "@Subscribe on ChatMessage; keyword-pair regex per reward (fire cape, infernal cape, Dizana's quiver) plus a completion-verb stem. Each reward gated by its own one-time ConfigManager flag (same pattern as CatastrophicEventsPlugin's DEATH_MESSAGE_NAME_TOKEN_MIGRATED_KEY) so it can never re-fire. Named to avoid ambiguity with the real Achievement Diary cape, which this feature excludes. Wording unverified against a live client, see WRN-006. Gated on accomplishmentSharingEnabled." }
       ],
       "depends_on": [
