@@ -74,6 +74,17 @@
       "detail": "Fast-forward merged bugfix/fix-pet-total-level-alerts into main at commit 628180b and pushed to origin/main. No PR was raised (see WL-005).",
       "related_step": null,
       "blocker": null
+    },
+    {
+      "entry_id": "WL-007",
+      "type": "note",
+      "timestamp": "2026-09-20T02:00:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Plugin version bumped to 1.2.2 and Plugin Hub distribution PR opened.",
+      "detail": "Bumped runelite-plugin.properties version to 1.2.2 (commit 99185d3820540c12853b7e134687e7c005b02114 on main), following this repo's existing pattern of a version-bump commit after a functional fix. Updated the sibling ../plugin-hub fork's plugins/catastrophic-events manifest (branch update-catastrophic-events-v1.2.2, based on upstream/master) to point at that commit, pushed to the mikeyf06/plugin-hub fork, and the developer opened runelite/plugin-hub PR #16817 to publish this update to the RuneLite Plugin Hub.",
+      "related_step": null,
+      "blocker": null
     }
   ]
 }

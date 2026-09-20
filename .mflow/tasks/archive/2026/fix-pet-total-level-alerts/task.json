@@ -7,7 +7,7 @@
   },
   "task_id": "fix-pet-total-level-alerts",
   "track": "JDI",
-  "status": "deployed",
+  "status": "archived",
   "project_type": "personal",
   "branch": "bugfix/fix-pet-total-level-alerts",
   "request": {
@@ -33,14 +33,14 @@
     "fix_plan": null
   },
   "ship": {
-    "pr_link": null,
+    "pr_link": "https://github.com/runelite/plugin-hub/pull/16817",
     "shipped_at": "2026-09-20T01:45:00Z",
     "deployed_at": "2026-09-20T01:45:00Z",
     "environment": "production"
   },
   "archive": {
-    "archived_at": null,
-    "archive_path": null
+    "archived_at": "2026-09-20T02:05:00Z",
+    "archive_path": ".mflow/tasks/archive/2026/fix-pet-total-level-alerts/"
   },
   "timestamps": {
     "created_at": "2026-09-20T00:50:37Z",
