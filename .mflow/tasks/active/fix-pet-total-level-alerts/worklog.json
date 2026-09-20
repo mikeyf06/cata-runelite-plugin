@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "fix-pet-total-level-alerts",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260920-010500",
+    "started_at": "2026-09-20T01:05:00Z",
+    "updated_at": "2026-09-20T01:20:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "decision",
+      "timestamp": "2026-09-20T01:00:00Z",
+      "author": "mike",
+      "source": "manual",
+      "summary": "Total-level alerts fire only for exactly 1750/2000/2200; max cape (2277) alert is dropped, not kept as a fourth threshold.",
+      "detail": "Asked the developer whether reaching max total level (2277 / max cape) should keep its own alert alongside the new 1750/2000/2200 thresholds, or be dropped since it wasn't in the explicit list. Developer chose to drop it too - only exactly 1750, 2000, and 2200 trigger an alert now.",
+      "related_step": "Step 2",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "note",
+      "timestamp": "2026-09-20T01:20:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Screenshot support required no AlertsApiClient or Plugin-registration changes.",
+      "detail": "AlertsApiClient already exposed a (token, kind, summary, title, byte[] pngBytes, callback) overload used by AccomplishmentLootListener, and both PetDropListener/SkillMilestoneListener were already Guice-registered in CatastrophicEventsPlugin. Work was confined to injecting ScreenshotCapture into both listeners and routing their sendAlert calls through the existing screenshot-carrying overload.",
+      "related_step": "Step 1-2",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-003",
+      "type": "note",
+      "timestamp": "2026-09-20T01:20:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Live-fire verification not possible in this environment.",
+      "detail": "Neither a real pet drop nor a live total-level-milestone chat message can be triggered from this dev environment. Verified via ./gradlew compileJava (BUILD SUCCESSFUL) and code review only. Consistent with WRN-006's existing caveat about PetDropListener's chat pattern being unconfirmed against a live client - flagging as a follow-up smoke test for the next time either fires live.",
+      "related_step": "Step 4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-004",
+      "type": "note",
+      "timestamp": "2026-09-20T01:35:00Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed - functional UAT deferred to post-ship live testing.",
+      "detail": "Developer confirmed dev UAT cannot be performed pre-ship: pet drops and total-level thresholds are real-game-only events not reproducible in this environment. Verification is based on ./gradlew compileJava (BUILD SUCCESSFUL), convention adherence, and no open blockers/new concerns. Developer will confirm the 8-item UAT checklist (pet screenshot, 1750/2000/2200 screenshot alerts, max-cape/other-threshold suppression, regression of untouched skill/XP alerts, config toggle gating) against a live client after this ships.",
+      "related_step": "Step 4",
+      "blocker": null
+    }
+  ]
+}

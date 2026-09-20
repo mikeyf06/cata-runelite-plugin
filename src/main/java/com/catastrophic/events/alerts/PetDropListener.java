@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.eventbus.Subscribe;
 
-/** Shares pet drops to Discord. */
+/** Shares pet drops to Discord with a screenshot. */
 @Slf4j
 public class PetDropListener
 {
@@ -24,12 +24,15 @@ public class PetDropListener
 		Pattern.CASE_INSENSITIVE);
 
 	private final CatastrophicEventsConfig config;
+	private final ScreenshotCapture screenshotCapture;
 	private final AlertsApiClient alertsApiClient;
 
 	@Inject
-	public PetDropListener(CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
+	public PetDropListener(CatastrophicEventsConfig config, ScreenshotCapture screenshotCapture,
+		AlertsApiClient alertsApiClient)
 	{
 		this.config = config;
+		this.screenshotCapture = screenshotCapture;
 		this.alertsApiClient = alertsApiClient;
 	}
 
@@ -53,18 +56,19 @@ public class PetDropListener
 			return;
 		}
 
-		alertsApiClient.sendAlert(token, AlertKind.PET, "received a pet", new ApiCallback<Void>()
-		{
-			@Override
-			public void onSuccess(Void result)
+		screenshotCapture.capture(png -> alertsApiClient.sendAlert(token, AlertKind.PET, "received a pet", null, png,
+			new ApiCallback<Void>()
 			{
-			}
+				@Override
+				public void onSuccess(Void result)
+				{
+				}
 
-			@Override
-			public void onError(ApiErrorType type, String errorMessage)
-			{
-				log.debug("Pet drop alert failed: {}", errorMessage);
-			}
-		});
+				@Override
+				public void onError(ApiErrorType type, String errorMessage)
+				{
+					log.debug("Pet drop alert failed: {}", errorMessage);
+				}
+			}));
 	}
 }

@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-09-20T00:50:37Z"
+  },
+  "task_id": "fix-pet-total-level-alerts",
+  "track": "JDI",
+  "status": "qa_review",
+  "project_type": "personal",
+  "branch": "bugfix/fix-pet-total-level-alerts",
+  "request": {
+    "summary": "Fix pet-drop Discord alerts to include a screenshot, and narrow total-level achievement alerts to only the 1750/2000/2200 thresholds (dropping all others), also with a screenshot.",
+    "submitted_at": "2026-09-20T00:50:37Z",
+    "raw_requirements": "We got a few bugs to fix:\n\n* Pet drops,  we need a screenshot of the drop as well to be posted to the discord\n* Total level achievements, we ONLY want to watch for 1750, 2000 and 2200. The others don't matter\n   * On that note, we also want a screenshot when these 3 thresholds are met"
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Both PetDropListener and SkillMilestoneListener already exist and are wired into CatastrophicEventsPlugin under the existing petDropSharingEnabled/accomplishmentSharingEnabled toggles, so this is confined to the alerts/ package: inject ScreenshotCapture into both listeners and route their sendAlert calls through AlertsApiClient's existing (token, kind, summary, title, byte[] pngBytes, callback) overload (already used by AccomplishmentLootListener). For total level, replace the >= MAX_TOTAL_LEVEL (2277) branch with an exact-match check against {1750, 2000, 2200}; all other totals, including 2277/max cape, are now ignored per explicit user decision.",
+    "steps": [
+      "PetDropListener.java: inject ScreenshotCapture; wrap the existing alertsApiClient.sendAlert(...) call in screenshotCapture.capture(png -> ...) using the (token, kind, summary, title=null, pngBytes, callback) overload.",
+      "SkillMilestoneListener.java: inject ScreenshotCapture; replace MAX_TOTAL_LEVEL constant with a TRACKED_TOTAL_LEVEL_THRESHOLDS = Set.of(1750, 2000, 2200); in handleTotalLevelMilestone, only proceed if the parsed total is in that set (drop the max-cape branch entirely), then capture a screenshot and send via the same screenshot-carrying sendAlert overload.",
+      "Log the max-cape-dropped behavior change via mflow log-decision.",
+      "Manual verification: code-read check both listeners compile logically against AlertsApiClient's overloads; real chat-message triggering isn't reproducible outside a live client, so note that in verify-task."
+    ],
+    "planned_at": "2026-09-20T01:05:00Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-09-20T01:35:00Z",
+    "notes": "Compile-verified (./gradlew compileJava BUILD SUCCESSFUL), conventions followed, no open blockers or new concerns. Functional UAT (pet-drop screenshot, 1750/2000/2200 screenshot alerts + max-cape/other-threshold suppression, regression of unaffected skill/XP alerts) deferred to post-ship live-client testing per developer - these are real-game-only events not reproducible in this dev environment, consistent with WRN-006's existing precedent for PetDropListener.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-09-20T00:50:37Z",
+    "updated_at": "2026-09-20T00:50:37Z"
+  }
+}

@@ -1,0 +1,89 @@
+# Plan — fix-pet-total-level-alerts
+
+**Project:** cata-runelite-plugin
+**Task:** fix-pet-total-level-alerts
+**Branch:** bugfix/fix-pet-total-level-alerts
+**Planned:** 2026-09-20T01:05:00Z
+
+---
+
+## Approach
+
+Both `PetDropListener` and `SkillMilestoneListener` already exist and are wired into `CatastrophicEventsPlugin` under the existing `petDropSharingEnabled`/`accomplishmentSharingEnabled` toggles, so this is confined to the `alerts/` package: inject `ScreenshotCapture` into both listeners and route their `sendAlert` calls through `AlertsApiClient`'s existing `(token, kind, summary, title, byte[] pngBytes, callback)` overload (already used by `AccomplishmentLootListener`). For total level, replace the `>= MAX_TOTAL_LEVEL` (2277) branch with an exact-match check against `{1750, 2000, 2200}`; all other totals, including 2277/max cape, are now ignored per explicit user decision (asked and confirmed: drop max cape too).
+
+## Layers affected
+
+- Alerts (`src/main/java/com/catastrophic/events/alerts/`) — `PetDropListener.java`, `SkillMilestoneListener.java`
+
+## Conventions to follow
+
+- Allman brace style, tab indentation
+- No `var` usage — explicit types
+- `@Slf4j` + `log.debug(...)` on alert failures (existing pattern in every listener)
+- Screenshot capture via injected `ScreenshotCapture.capture(png -> ...)`, mirroring `AccomplishmentLootListener`
+- Constructor `@Inject`, matching existing listener constructors
+
+## Concerns to watch
+
+- WRN-006: `PetDropListener`'s chat-message pattern matching is best-effort, unconfirmed against a live client. This task does not touch the matching pattern itself (`PET_OBTAINED`), only the send path after a match — but if pet alerts still never fire post-fix, the pattern itself is the more likely suspect, not this change.
+
+---
+
+## Steps
+
+### Step 1 — Add screenshot to pet drop alerts
+In `src/main/java/com/catastrophic/events/alerts/PetDropListener.java`:
+- Add a `ScreenshotCapture screenshotCapture` field, inject it via the constructor (alongside `config` and `alertsApiClient`).
+- Replace the existing `alertsApiClient.sendAlert(token, AlertKind.PET, "received a pet", new ApiCallback<Void>() {...})` call with:
+  ```java
+  screenshotCapture.capture(png -> alertsApiClient.sendAlert(token, AlertKind.PET, "received a pet", null, png,
+      new ApiCallback<Void>() { ... }));
+  ```
+  (title `null` — no natural title for a generic pet drop, matching the existing summary-only text)
+
+### Step 2 — Narrow total-level thresholds and add screenshot
+In `src/main/java/com/catastrophic/events/alerts/SkillMilestoneListener.java`:
+- Add a `ScreenshotCapture screenshotCapture` field, inject it via the constructor.
+- Replace `private static final int MAX_TOTAL_LEVEL = 2277;` with:
+  ```java
+  private static final Set<Integer> TRACKED_TOTAL_LEVEL_THRESHOLDS = Set.of(1750, 2000, 2200);
+  ```
+  (add `import java.util.Set;`)
+- Rewrite `handleTotalLevelMilestone`:
+  ```java
+  private void handleTotalLevelMilestone(String token, Matcher matcher)
+  {
+      int total = Integer.parseInt(matcher.group("total").replace(",", ""));
+      if (!TRACKED_TOTAL_LEVEL_THRESHOLDS.contains(total))
+      {
+          return;
+      }
+
+      screenshotCapture.capture(png -> postWithScreenshot(token,
+          String.format("reached %,d Total Level", total),
+          String.format("%,d Total Level", total), png));
+  }
+  ```
+  removing the old max-cape (`total >= MAX_TOTAL_LEVEL`) branch entirely.
+- Add a `postWithScreenshot(String token, String summary, String title, byte[] png)` helper (or inline) that calls `alertsApiClient.sendAlert(token, AlertKind.ACCOMPLISHMENT, summary, title, png, new ApiCallback<Void>() {...})`, mirroring the existing `post(...)` helper's error logging (`log.debug("Accomplishment alert failed: {}", message)`).
+- Leave the other three milestone handlers (`handleSkillLevelUp`, `handleSkillXpMilestone`, `handleTotalXpMilestone`) and their text-only `post(...)` helper untouched — this task only changes total-level milestones.
+
+### Step 3 — Log the behavior change
+Run `mflow log-decision` to record: total-level Discord alerts now fire only for exactly 1750/2000/2200; the previous max-cape (2277) special-case alert has been removed, per explicit user decision during planning.
+
+### Step 4 — Manual verification
+- Read through both modified files to confirm they compile logically (correct overload arity/order, imports present).
+- Note in `verify-task` that live-fire verification (an actual pet drop or hitting one of the three total-level thresholds in-game) isn't reproducible in this environment — flag it as a follow-up smoke test for the next time either fires live, consistent with how WRN-006 already documents this limitation for pet drops.
+
+---
+
+## Definition of done
+
+- [ ] All steps completed
+- [ ] Follows existing conventions
+- [ ] Unit tests written and passing
+- [ ] No new concerns introduced
+- [ ] Ready for `mflow verify-task`
+
+---
+_Generated by mflow plan-task — 2026-09-20T01:05:00Z_

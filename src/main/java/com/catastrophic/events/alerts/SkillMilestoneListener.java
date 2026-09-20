@@ -5,6 +5,7 @@ import com.catastrophic.events.api.AlertsApiClient;
 import com.catastrophic.events.api.ApiCallback;
 import com.catastrophic.events.api.ApiErrorType;
 import com.google.common.base.Strings;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
@@ -15,8 +16,9 @@ import net.runelite.client.eventbus.Subscribe;
 
 /**
  * Shares skill/XP/total-level milestones to Discord: 99s, 25m XP-past-99 milestones, 50m total XP
- * milestones, total level milestones, and max cape. Entirely chat-message driven - no polling, no
- * client-state baseline of any kind. Each of these messages only ever appears live, the moment the
+ * milestones, and total level milestones of exactly 1750/2000/2200 (with a screenshot). Entirely
+ * chat-message driven - no polling, no client-state baseline of any kind. Each of these messages
+ * only ever appears live, the moment the
  * real achievement happens, so unlike the previous Quest.getState()/StatChanged-polling approach
  * (which needed a "what did the player already have coming into this session" baseline that proved
  * impossible to time correctly around login - confirmed live, twice, for both quests and skills) there
@@ -25,7 +27,9 @@ import net.runelite.client.eventbus.Subscribe;
 @Slf4j
 public class SkillMilestoneListener
 {
-	private static final int MAX_TOTAL_LEVEL = 2277;
+	// Only these three total-level thresholds are worth a Discord alert - all other totals
+	// (including 2277/max cape) are ignored, per explicit product decision.
+	private static final Set<Integer> TRACKED_TOTAL_LEVEL_THRESHOLDS = Set.of(1750, 2000, 2200);
 
 	// Confirmed live against a real client - exact Jagex wording (see task worklog for screenshots).
 	private static final Pattern SKILL_LEVEL_UP = Pattern.compile(
@@ -44,12 +48,15 @@ public class SkillMilestoneListener
 		"Congratulations, you've reached (?<xp>[\\d,]+) total experience\\.");
 
 	private final CatastrophicEventsConfig config;
+	private final ScreenshotCapture screenshotCapture;
 	private final AlertsApiClient alertsApiClient;
 
 	@Inject
-	public SkillMilestoneListener(CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
+	public SkillMilestoneListener(CatastrophicEventsConfig config, ScreenshotCapture screenshotCapture,
+		AlertsApiClient alertsApiClient)
 	{
 		this.config = config;
+		this.screenshotCapture = screenshotCapture;
 		this.alertsApiClient = alertsApiClient;
 	}
 
@@ -115,14 +122,14 @@ public class SkillMilestoneListener
 	private void handleTotalLevelMilestone(String token, Matcher matcher)
 	{
 		int total = Integer.parseInt(matcher.group("total").replace(",", ""));
-		if (total >= MAX_TOTAL_LEVEL)
+		if (!TRACKED_TOTAL_LEVEL_THRESHOLDS.contains(total))
 		{
-			post(token, "achieved max cape (all 99s)", "Max Cape");
+			return;
 		}
-		else
-		{
-			post(token, String.format("reached %,d Total Level", total), String.format("%,d Total Level", total));
-		}
+
+		String summary = String.format("reached %,d Total Level", total);
+		String title = String.format("%,d Total Level", total);
+		screenshotCapture.capture(png -> postWithScreenshot(token, summary, title, png));
 	}
 
 	private void handleSkillXpMilestone(String token, Matcher matcher)
@@ -136,6 +143,23 @@ public class SkillMilestoneListener
 	{
 		long xp = Long.parseLong(matcher.group("xp").replace(",", ""));
 		post(token, String.format("reached %,d Total XP", xp), "Total XP milestone");
+	}
+
+	private void postWithScreenshot(String token, String summary, String title, byte[] png)
+	{
+		alertsApiClient.sendAlert(token, AlertKind.ACCOMPLISHMENT, summary, title, png, new ApiCallback<Void>()
+		{
+			@Override
+			public void onSuccess(Void result)
+			{
+			}
+
+			@Override
+			public void onError(ApiErrorType type, String message)
+			{
+				log.debug("Accomplishment alert failed: {}", message);
+			}
+		});
 	}
 
 	private void post(String token, String summary, String title)
