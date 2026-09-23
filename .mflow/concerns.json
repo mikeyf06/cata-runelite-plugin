@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "concerns",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-09-16T19:46:36Z"
+    "updated_at": "2026-09-23T14:12:45Z"
   },
   "tech_debt": [
     {
@@ -89,7 +89,20 @@
     {
       "id": "WRN-006",
       "summary": "PetDropListener and OneTimeRewardListener (fire cape / infernal cape / Dizana's quiver) match on best-effort recalled chat-message wording that has not been confirmed against a live client actually producing those messages (can't fake a real pet drop or Inferno completion in dev). If the wording is off, the affected alert would silently just never fire - no error, no crash. Confirm against real chat log text (or a clan member's report) the first time each of these actually fires, and tighten the Pattern if it turns out wrong.",
-      "area": "alerts/PetDropListener.java, alerts/OneTimeRewardListener.java"
+      "area": "alerts/PetDropListener.java, alerts/OneTimeRewardListener.java",
+      "resolved_at": "2026-09-23T14:12:45Z",
+      "resolved_by": "consolidate-loot-listeners",
+      "resolution_note": "Resolves the spoofing half of this concern: both listeners now filter to ChatMessageType.GAMEMESSAGE before matching text, so a player typing matching text in public/clan/private chat can no longer trigger a false alert (confirmed exploitable via a real Discord incident before this fix; verified the GAMEMESSAGE filter against the 'Discord Notifications' Hub plugin's equivalent, real, previously-trusted check). PetDropListener's wording is now also confirmed correct for the primary pet message via a live screenshot. OneTimeRewardListener's exact fire cape/infernal cape/Dizana's quiver wording remains unconfirmed against a live client - if it's off, the alert will still just silently never fire, same residual risk as before, now tracked as WRN-007."
+    },
+    {
+      "id": "WRN-007",
+      "summary": "OneTimeRewardListener's fire cape / infernal cape / Dizana's quiver chat-text wording (FIRE_CAPE_TOPIC/INFERNAL_CAPE_TOPIC/DIZANAS_QUIVER_TOPIC/COMPLETION_VERB patterns) is still best-effort/unconfirmed against a live client producing those exact messages - narrowed down from WRN-006, which the spoofing half of this concern (ChatMessageType filtering) now resolves. If the wording is off, the affected alert would silently just never fire - no error, no crash. Confirm against real chat log text the first time each of these actually fires, and tighten the Pattern if it turns out wrong.",
+      "area": "alerts/OneTimeRewardListener.java"
+    },
+    {
+      "id": "WRN-008",
+      "summary": "net.runelite.api.ItemID (used by LootAlertListener's TRACKED_ACCOMPLISHMENT_ITEM_IDS allowlist, all 7 entries) is a deprecated class as of the currently-resolved RuneLite client version, superseded by net.runelite.api.gameval.ItemID. Confirmed via javac -Xlint:deprecation (\"ItemID in net.runelite.api has been deprecated\") - a class-level deprecation affecting every constant referenced from it, not specific to any one item. Pre-existing (was already true when these constants lived in the now-deleted AccomplishmentLootListener.java), just newly surfaced/documented here. Migrating to the gameval class needs each constant name re-verified for an exact match (not guaranteed 1:1) - not done as part of this fix to keep scope bounded to the loot-listener consolidation bug.",
+      "area": "alerts/LootAlertListener.java"
     }
   ],
   "dependencies_at_risk": [
