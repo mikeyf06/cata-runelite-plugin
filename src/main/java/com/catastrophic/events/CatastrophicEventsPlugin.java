@@ -1,6 +1,5 @@
 package com.catastrophic.events;
 
-import com.catastrophic.events.alerts.AccomplishmentLootListener;
 import com.catastrophic.events.alerts.CofferAlertListener;
 import com.catastrophic.events.alerts.DeathAlertListener;
 import com.catastrophic.events.alerts.LootAlertListener;
@@ -92,9 +91,6 @@ public class CatastrophicEventsPlugin extends Plugin
 	private QuestMilestoneListener questMilestoneListener;
 
 	@Inject
-	private AccomplishmentLootListener accomplishmentLootListener;
-
-	@Inject
 	private PetDropListener petDropListener;
 
 	@Inject
@@ -137,7 +133,6 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.register(cofferAlertListener);
 		eventBus.register(skillMilestoneListener);
 		eventBus.register(questMilestoneListener);
-		eventBus.register(accomplishmentLootListener);
 		eventBus.register(petDropListener);
 		eventBus.register(oneTimeRewardListener);
 
@@ -159,7 +154,6 @@ public class CatastrophicEventsPlugin extends Plugin
 		eventBus.unregister(cofferAlertListener);
 		eventBus.unregister(skillMilestoneListener);
 		eventBus.unregister(questMilestoneListener);
-		eventBus.unregister(accomplishmentLootListener);
 		eventBus.unregister(petDropListener);
 		eventBus.unregister(oneTimeRewardListener);
 		clientToolbar.removeNavigation(navButton);

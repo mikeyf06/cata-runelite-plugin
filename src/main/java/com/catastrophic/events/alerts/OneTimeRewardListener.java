@@ -8,6 +8,7 @@ import com.google.common.base.Strings;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -16,7 +17,9 @@ import net.runelite.client.eventbus.Subscribe;
  * Shares first-time PvM/skilling rewards to Discord: fire cape, infernal cape, Dizana's quiver.
  * Deliberately not named "achievement cape" - that's ambiguous with the actual Achievement Diary
  * cape, which is excluded from this feature (see PLAN.md). Each reward is gated by a one-time
- * per-profile flag so it can never re-fire.
+ * per-profile flag so it can never re-fire. Filtered to ChatMessageType.GAMEMESSAGE so a player
+ * can't spoof an alert by typing matching text themselves (same fix applied to PetDropListener
+ * after a real spoofing incident).
  */
 @Slf4j
 public class OneTimeRewardListener
@@ -46,6 +49,11 @@ public class OneTimeRewardListener
 	public void onChatMessage(ChatMessage event)
 	{
 		if (!config.accomplishmentSharingEnabled())
+		{
+			return;
+		}
+
+		if (event.getType() != ChatMessageType.GAMEMESSAGE)
 		{
 			return;
 		}

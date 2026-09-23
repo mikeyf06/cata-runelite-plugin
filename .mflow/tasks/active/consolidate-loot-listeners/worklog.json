@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "consolidate-loot-listeners",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260923-140900",
+    "started_at": "2026-09-23T14:09:00Z",
+    "updated_at": "2026-09-23T14:12:45Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "note",
+      "timestamp": "2026-09-23T14:11:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Steps 1-5 complete: LootAlertListener now subscribes to NpcLootReceived/PlayerLootReceived/LootReceived (filtered EVENT|PICKPOCKET) and independently checks the value-threshold and mega-rare-allowlist rules per item, firing to one or both channels. AccomplishmentLootListener.java deleted, CatastrophicEventsPlugin.java registration updated. ./gradlew compileJava succeeded.",
+      "detail": "TRACKED_ACCOMPLISHMENT_ITEM_IDS now holds 7 entries (the original 4 plus MOKHAIOTL_CLOTH, EYE_OF_AYAK_UNCHARGED, AVERNIC_TREADS). handleLoot() runs both checks independently per item rather than early-returning, so an item can trigger both AlertKind.LOOT and AlertKind.ACCOMPLISHMENT.",
+      "related_step": "Steps 1-5",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "deviation",
+      "timestamp": "2026-09-23T14:11:15Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Caught and fixed a self-introduced regex bug in PetDropListener's PET_OBTAINED pattern before it was ever run - a malformed alternation would have matched \"funny feeling like you would have been being followed\" (duplicated \"been being\") instead of the correct wording.",
+      "detail": "First draft of the edit combined the phrase variants into a single broken group-alternation; rewritten as three clean literal alternatives (funny feeling like you're being followed | funny feeling like you would have been followed | feel something weird sneaking into your backpack) matching the reference plugin exactly. Caught by re-reading the edit immediately after applying it, before compiling.",
+      "related_step": "Step 6",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-003",
+      "type": "note",
+      "timestamp": "2026-09-23T14:12:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Discovered a pre-existing compiler deprecation warning on LootAlertListener.java after Step 5's compile - net.runelite.api.ItemID (used by all 7 TRACKED_ACCOMPLISHMENT_ITEM_IDS entries) is a deprecated class, superseded by net.runelite.api.gameval.ItemID.",
+      "detail": "Isolated via a standalone javac -Xlint:deprecation test referencing all 8 original+new constants - confirmed it's a class-level deprecation (\"ItemID in net.runelite.api has been deprecated\") affecting every constant equally, not specific to the 3 new Mokhaiotl items. Pre-existing - the same warning already existed on the now-deleted AccomplishmentLootListener.java, just never surfaced/documented. Not migrating to the gameval class in this task (out of scope, needs each constant re-verified for an exact name match) - logged as new concern WRN-008 instead.",
+      "related_step": "Step 5",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-004",
+      "type": "note",
+      "timestamp": "2026-09-23T14:12:30Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Steps 6-8 complete: PetDropListener and OneTimeRewardListener both now filter to ChatMessageType.GAMEMESSAGE before matching chat text, closing the spoofing gap. concerns.json updated - WRN-006 marked resolved (spoofing half), new WRN-007 (OneTimeRewardListener wording still unconfirmed) and WRN-008 (deprecated ItemID) added. ./gradlew compileJava succeeded after all changes.",
+      "detail": "PetDropListener's PET_OBTAINED pattern also gained a third confirmed variant (\"funny feeling like you would have been followed\", the duplicate-pet-roll wording) sourced from the discord-notifications reference plugin.",
+      "related_step": "Steps 6-8",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-005",
+      "type": "note",
+      "timestamp": "2026-09-23T14:29:18Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "Definition of done, concerns check, and worklog review confirmed. Dev UAT accepted on compile + two live client boots plus code-review-level confidence, since the real game-content triggers (Mokhaiotl chest reward, pet drop, cape completion) can't be reproduced in a dev environment - same bar every prior game-event-driven task in this repo has shipped on.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}
