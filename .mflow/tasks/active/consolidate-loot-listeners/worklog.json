@@ -63,6 +63,17 @@
       "detail": "Definition of done, concerns check, and worklog review confirmed. Dev UAT accepted on compile + two live client boots plus code-review-level confidence, since the real game-content triggers (Mokhaiotl chest reward, pet drop, cape completion) can't be reproduced in a dev environment - same bar every prior game-event-driven task in this repo has shipped on.",
       "related_step": null,
       "blocker": null
+    },
+    {
+      "entry_id": "WL-006",
+      "type": "note",
+      "timestamp": "2026-09-23T14:30:01Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Task shipped to production",
+      "detail": "No PR - direct merge per developer instruction. Commit 080612d on bugfix/consolidate-loot-listeners, merged into main via --no-ff (3034518), pushed to origin/main.",
+      "related_step": null,
+      "blocker": null
     }
   ]
 }
