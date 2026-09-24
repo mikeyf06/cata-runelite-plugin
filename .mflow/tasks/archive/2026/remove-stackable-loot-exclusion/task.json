@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-09-23T15:02:26Z"
+  },
+  "task_id": "remove-stackable-loot-exclusion",
+  "track": "JDI",
+  "status": "archived",
+  "project_type": "personal",
+  "branch": "bugfix/remove-stackable-loot-exclusion",
+  "request": {
+    "summary": "Remove the !composition.isStackable() exclusion from LootAlertListener's value-based loot check, so any item - stackable or not - alerts once its total stack value (price * quantity) crosses the existing 1.5m gp threshold.",
+    "submitted_at": "2026-09-23T15:02:26Z",
+    "raw_requirements": "Remove the !composition.isStackable() exclusion from LootAlertListener's value-based loot check (src/main/java/com/catastrophic/events/alerts/LootAlertListener.java). Currently a stackable item's total stack value (price * quantity) never even gets evaluated against the 1.5m gp threshold because it's gated behind \"not stackable\". User wants this changed so any item - stackable or not - alerts if its total stack value crosses 1.5m gp. Originally this exclusion was meant to filter noisy routine stackables (arrows, runes, etc.) from common drops, but it also blocks legitimate high-value stackable uniques (e.g. Yama's Oathplate shards, ~165k gp each, easily exceeding 1.5m gp across a stack). User's explicit direction: remove the stackable exclusion entirely, rely solely on the 1.5m gp total-stack-value threshold."
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Drop the !composition.isStackable() guard from LootAlertListener.handleLoot()'s value check, so the existing totalValue >= VALUE_THRESHOLD_GP check runs for every item regardless of stackability. Update the class Javadoc to match.",
+    "steps": [
+      "Step 1 - LootAlertListener.java:99: change 'if (config.lootSharingEnabled() && !composition.isStackable())' to 'if (config.lootSharingEnabled())'.",
+      "Step 2 - LootAlertListener.java: update class Javadoc to describe the check as applying to any item's total stack value, stackable or not.",
+      "Step 3 - ./gradlew compileJava to confirm clean compile."
+    ],
+    "planned_at": "2026-09-23T15:03:02Z"
+  },
+  "verification": {
+    "status": "abandoned",
+    "checked_at": "2026-09-24T02:00:38Z",
+    "notes": "Abandoned mid-verify-task by developer decision, not a failure. Root-cause investigation for the triggering report (a Yama Oathplate-armour drop not alerting) found the actual drop was non-stackable and worth ~82m gp, well above the 1.5m threshold - so the stackable exclusion was never the cause in that incident, and is likely already fixed by consolidate-loot-listeners' LootReceived/EVENT-type coverage. Developer chose to keep the original !composition.isStackable() guard rather than loosen it on a hypothetical (Oathplate shards) that wasn't the real case. Code change fully reverted; LootAlertListener.java confirmed identical to main via git diff. No code shipped.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": null,
+    "deployed_at": null,
+    "environment": null
+  },
+  "archive": {
+    "archived_at": "2026-09-24T02:00:38Z",
+    "archive_path": ".mflow/tasks/archive/2026/remove-stackable-loot-exclusion/"
+  },
+  "timestamps": {
+    "created_at": "2026-09-23T15:02:26Z",
+    "updated_at": "2026-09-24T02:00:38Z"
+  }
+}
