@@ -39,9 +39,7 @@ public class LootAlertListener
 		ItemID.SCYTHE_OF_VITUR,
 		ItemID.TUMEKENS_SHADOW,
 		ItemID.ANCIENT_BLOOD_ORNAMENT_KIT,
-		ItemID.MOKHAIOTL_CLOTH,
-		ItemID.EYE_OF_AYAK_UNCHARGED,
-		ItemID.AVERNIC_TREADS
+		ItemID.PURIFYING_SIGIL
 	);
 
 	private final CatastrophicEventsConfig config;

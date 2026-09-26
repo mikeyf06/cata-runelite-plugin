@@ -3,7 +3,7 @@
     "schema_version": "1.0",
     "file_type": "concerns",
     "project_id": "cata-runelite-plugin",
-    "updated_at": "2026-09-23T14:12:45Z"
+    "updated_at": "2026-09-26T17:01:30Z"
   },
   "tech_debt": [
     {
@@ -101,7 +101,7 @@
     },
     {
       "id": "WRN-008",
-      "summary": "net.runelite.api.ItemID (used by LootAlertListener's TRACKED_ACCOMPLISHMENT_ITEM_IDS allowlist, all 7 entries) is a deprecated class as of the currently-resolved RuneLite client version, superseded by net.runelite.api.gameval.ItemID. Confirmed via javac -Xlint:deprecation (\"ItemID in net.runelite.api has been deprecated\") - a class-level deprecation affecting every constant referenced from it, not specific to any one item. Pre-existing (was already true when these constants lived in the now-deleted AccomplishmentLootListener.java), just newly surfaced/documented here. Migrating to the gameval class needs each constant name re-verified for an exact match (not guaranteed 1:1) - not done as part of this fix to keep scope bounded to the loot-listener consolidation bug.",
+      "summary": "net.runelite.api.ItemID (used by LootAlertListener's TRACKED_ACCOMPLISHMENT_ITEM_IDS allowlist, all 5 entries) is a deprecated class as of the currently-resolved RuneLite client version, superseded by net.runelite.api.gameval.ItemID. Confirmed via javac -Xlint:deprecation (\"ItemID in net.runelite.api has been deprecated\") - a class-level deprecation affecting every constant referenced from it, not specific to any one item. Pre-existing (was already true when these constants lived in the now-deleted AccomplishmentLootListener.java), just newly surfaced/documented here. Migrating to the gameval class needs each constant name re-verified for an exact match (not guaranteed 1:1) - not done as part of this fix to keep scope bounded to the loot-listener consolidation bug.",
       "area": "alerts/LootAlertListener.java"
     }
   ],
