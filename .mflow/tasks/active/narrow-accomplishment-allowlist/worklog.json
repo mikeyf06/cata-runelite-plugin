@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "narrow-accomplishment-allowlist",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20260926-170130",
+    "started_at": "2026-09-26T17:01:30Z",
+    "updated_at": "2026-09-26T17:01:30Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "note",
+      "timestamp": "2026-09-26T17:01:30Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Created branch bugfix/narrow-accomplishment-allowlist off main and executed all 3 plan steps with no deviations.",
+      "detail": "LootAlertListener.java's TRACKED_ACCOMPLISHMENT_ITEM_IDS changed from {TWISTED_BOW, SCYTHE_OF_VITUR, TUMEKENS_SHADOW, ANCIENT_BLOOD_ORNAMENT_KIT, MOKHAIOTL_CLOTH, EYE_OF_AYAK_UNCHARGED, AVERNIC_TREADS} to {TWISTED_BOW, SCYTHE_OF_VITUR, TUMEKENS_SHADOW, ANCIENT_BLOOD_ORNAMENT_KIT, PURIFYING_SIGIL}. ./gradlew.bat compileJava -> BUILD SUCCESSFUL, ItemID.PURIFYING_SIGIL resolved cleanly. .mflow/concerns.json WRN-008 updated from 'all 7 entries' to 'all 5 entries'.",
+      "related_step": "Step 1-3",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "note",
+      "timestamp": "2026-09-26T17:05:11Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed",
+      "detail": "No open blockers. Diff scoped to the allowlist swap and WRN-008 wording update. Conventions followed, no new concerns.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}
