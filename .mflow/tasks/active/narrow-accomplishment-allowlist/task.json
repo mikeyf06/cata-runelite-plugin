@@ -7,7 +7,7 @@
   },
   "task_id": "narrow-accomplishment-allowlist",
   "track": "JDI",
-  "status": "qa_review",
+  "status": "deployed",
   "project_type": "personal",
   "branch": "bugfix/narrow-accomplishment-allowlist",
   "request": {
@@ -33,9 +33,9 @@
   },
   "ship": {
     "pr_link": null,
-    "shipped_at": null,
-    "deployed_at": null,
-    "environment": null
+    "shipped_at": "2026-09-26T17:07:08Z",
+    "deployed_at": "2026-09-26T17:07:08Z",
+    "environment": "production"
   },
   "archive": {
     "archived_at": null,
