@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "schema_version": "1.1",
+    "file_type": "worklog",
+    "task_id": "fix-accomplishment-alert-accuracy",
+    "project_id": "cata-runelite-plugin",
+    "session_id": "sess-20261018-023500",
+    "started_at": "2026-10-18T02:35:00Z",
+    "updated_at": "2026-10-18T02:50:00Z"
+  },
+  "entries": [
+    {
+      "entry_id": "WL-001",
+      "type": "decision",
+      "timestamp": "2026-10-18T02:40:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Shadow not posting as an accomplishment traced to charged-only item IDs; Scythe of vitur had the same bug and was fixed too.",
+      "detail": "LootAlertListener.TRACKED_ACCOMPLISHMENT_ITEM_IDS held only TUMEKENS_SHADOW (27275) and SCYTHE_OF_VITUR (22325), the charged items. ToA/ToB drop the uncharged items (TUMEKENS_SHADOW_UNCHARGED 27277, SCYTHE_OF_VITUR_UNCHARGED 22486; both confirmed present in the pinned runelite-api 1.12.39 via javap). The drop therefore passed the >=1.5m loot-value check (posted to loot-sharing) but failed the accomplishment allowlist. Added both uncharged IDs and kept the charged ones (e.g. PK loot). Scythe was not reported but is the identical failure, so it was fixed in the same change. Not verifiable live; one residual possibility is that the reporting player simply had accomplishmentSharingEnabled off while lootSharingEnabled was on.",
+      "related_step": "Step 1",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-002",
+      "type": "decision",
+      "timestamp": "2026-10-18T02:42:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "OneTimeRewardListener now fires only on the Collection Log new-item message; per-profile one-time flags and ConfigManager dependency removed.",
+      "detail": "Old logic inferred 'first time' from loose completion text (fight cave / inferno / dizana + complet|obtain|congratulat) plus a plugin-side 'already sent' flag, so any veteran who already owned the item fired once. New logic matches 'New item added to your collection log: <item>' (exact wording from RuneLite's ScreenshotPlugin.COLLECTION_LOG_TEXT, verified in client-1.12.39.jar) and matches the item name per reward, so the game decides what is new. The flags (firstFireCapeAlertSent, firstInfernalCapeAlertSent, firstDizanasQuiverAlertSent) were removed rather than kept: a collection log entry is inherently one-time, and a flag set by an earlier false positive could otherwise suppress a legitimate alert. The orphaned keys remain in users' RuneLite config, harmless. GAMEMESSAGE filter retained. Matching logic moved to a package-private static match() on a Reward enum so it is testable without the RuneLite runtime.",
+      "related_step": "Step 2",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-003",
+      "type": "note",
+      "timestamp": "2026-10-18T02:45:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Known limitation: alerts depend on the in-game collection log notification setting.",
+      "detail": "The 'New item added to your collection log' chat message is only produced when the player has the in-game Collection log new-addition notification enabled (RuneLite's ScreenshotPlugin gates on Varbits.COLLECTION_LOG_NOTIFICATION / varbit 11959). Players with it off will silently post no fire cape / infernal cape / Dizana's quiver alert. Accepted trade-off to eliminate false positives; documented in the class javadoc. Clan members should be told to enable it.",
+      "related_step": "Step 2",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-004",
+      "type": "note",
+      "timestamp": "2026-10-18T02:48:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "First automated test added to the repo (partially addresses TD-001).",
+      "detail": "Added src/test/java/com/catastrophic/events/alerts/OneTimeRewardListenerTest.java (JUnit 4.12, already a test dependency, no new packages). 4 tests pin the verified message wording and the old false-positive texts, other collection log entries, and near-misses (Fire cape (l), Infernal cape (broken), Dizana's max cape). ./gradlew compileJava test -> BUILD SUCCESSFUL, report shows tests=4 failures=0 errors=0 skipped=0. Live behavior (an actual new collection log entry, an actual Shadow/Scythe drop) cannot be triggered in dev.",
+      "related_step": "Step 3-4",
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-005",
+      "type": "note",
+      "timestamp": "2026-10-18T03:00:00Z",
+      "author": "system",
+      "source": "auto",
+      "summary": "Verification passed (automated evidence); live UAT deferred.",
+      "detail": "No open blockers. Build and 4/4 unit tests pass. KI-005 added to concerns.json for the in-game collection log notification dependency. WRN-007 is addressed by this change and should be marked resolved at ship (ship-task step 4.5). Live UAT deferred to post-ship; developer sign-off on the definition of done was not collected in this round.",
+      "related_step": null,
+      "blocker": null
+    },
+    {
+      "entry_id": "WL-006",
+      "type": "note",
+      "timestamp": "2026-10-18T03:30:00Z",
+      "author": "mike",
+      "source": "auto",
+      "summary": "Dev client smoke-tested, then shipped directly to main at the developer's request.",
+      "detail": "./gradlew run booted RuneLite 1.13.2 in developer mode with the plugin loaded; the developer confirmed it looked good ('looks good, lets merge this to main'). Merged bugfix/fix-accomplishment-alert-accuracy into main with no PR and no staging step (same direct-to-main flow the developer chose for fix-pet-total-level-alerts). WRN-007 marked resolved and KI-005 recorded. Version bump and Plugin Hub PR were not requested and are not part of this ship.",
+      "related_step": null,
+      "blocker": null
+    }
+  ]
+}

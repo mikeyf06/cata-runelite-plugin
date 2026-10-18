@@ -5,85 +5,94 @@ import com.catastrophic.events.api.AlertsApiClient;
 import com.catastrophic.events.api.ApiCallback;
 import com.catastrophic.events.api.ApiErrorType;
 import com.google.common.base.Strings;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 
 /**
- * Shares first-time PvM/skilling rewards to Discord: fire cape, infernal cape, Dizana's quiver.
- * Deliberately not named "achievement cape" - that's ambiguous with the actual Achievement Diary
- * cape, which is excluded from this feature (see PLAN.md). Each reward is gated by a one-time
- * per-profile flag so it can never re-fire. Filtered to ChatMessageType.GAMEMESSAGE so a player
- * can't spoof an alert by typing matching text themselves (same fix applied to PetDropListener
- * after a real spoofing incident).
+ * Shares first-time PvM rewards to Discord: fire cape, infernal cape, Dizana's quiver. Only fires on
+ * the game's own Collection Log "new item" message, so "first time" is decided by the game rather
+ * than guessed from completion text - an account that already owns the item can never trigger it.
+ * That message only appears when the player has the in-game "Collection log - new addition
+ * notification" setting enabled; with it off, no alert is posted. Deliberately not named
+ * "achievement cape" - that's ambiguous with the actual Achievement Diary cape, which is excluded.
+ * Filtered to ChatMessageType.GAMEMESSAGE so a player can't spoof an alert by typing matching text.
  */
 @Slf4j
 public class OneTimeRewardListener
 {
-	private static final String CONFIG_GROUP = "catastrophicevents";
+	// Same wording RuneLite's own ScreenshotPlugin matches (COLLECTION_LOG_TEXT).
+	private static final Pattern COLLECTION_LOG_ENTRY = Pattern.compile(
+		"New item added to your collection log: (?<item>[^<]+)");
 
-	// Matched on distinctive keyword pairs rather than an exact sentence, since precise in-game
-	// wording wasn't verified against a live client - see PLAN.md "Concerns to watch".
-	private static final Pattern FIRE_CAPE_TOPIC = Pattern.compile("fight cave", Pattern.CASE_INSENSITIVE);
-	private static final Pattern INFERNAL_CAPE_TOPIC = Pattern.compile("inferno", Pattern.CASE_INSENSITIVE);
-	private static final Pattern DIZANAS_QUIVER_TOPIC = Pattern.compile("dizana", Pattern.CASE_INSENSITIVE);
-	private static final Pattern COMPLETION_VERB = Pattern.compile("complet|obtain|congratulat", Pattern.CASE_INSENSITIVE);
+	enum Reward
+	{
+		FIRE_CAPE("^fire cape$", "Fire Cape", "achieved their first Fire cape"),
+		INFERNAL_CAPE("^infernal cape$", "Infernal Cape", "achieved their first Infernal cape"),
+		DIZANAS_QUIVER("^dizana.s quiver\\b", "Dizana's Quiver", "achieved their first Dizana's quiver");
+
+		private final Pattern itemName;
+		private final String title;
+		private final String summary;
+
+		Reward(String itemNameRegex, String title, String summary)
+		{
+			this.itemName = Pattern.compile(itemNameRegex, Pattern.CASE_INSENSITIVE);
+			this.title = title;
+			this.summary = summary;
+		}
+	}
+
+	/** Returns the tracked reward a collection log message announces, or null if it isn't one. */
+	static Reward match(String message)
+	{
+		if (Strings.isNullOrEmpty(message))
+		{
+			return null;
+		}
+
+		Matcher entry = COLLECTION_LOG_ENTRY.matcher(message);
+		if (!entry.find())
+		{
+			return null;
+		}
+
+		String item = entry.group("item").trim();
+		for (Reward reward : Reward.values())
+		{
+			if (reward.itemName.matcher(item).find())
+			{
+				return reward;
+			}
+		}
+
+		return null;
+	}
 
 	private final CatastrophicEventsConfig config;
-	private final ConfigManager configManager;
 	private final AlertsApiClient alertsApiClient;
 
 	@Inject
-	public OneTimeRewardListener(CatastrophicEventsConfig config, ConfigManager configManager, AlertsApiClient alertsApiClient)
+	public OneTimeRewardListener(CatastrophicEventsConfig config, AlertsApiClient alertsApiClient)
 	{
 		this.config = config;
-		this.configManager = configManager;
 		this.alertsApiClient = alertsApiClient;
 	}
 
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
-		if (!config.accomplishmentSharingEnabled())
+		if (!config.accomplishmentSharingEnabled() || event.getType() != ChatMessageType.GAMEMESSAGE)
 		{
 			return;
 		}
 
-		if (event.getType() != ChatMessageType.GAMEMESSAGE)
-		{
-			return;
-		}
-
-		String message = event.getMessage();
-		if (Strings.isNullOrEmpty(message) || !COMPLETION_VERB.matcher(message).find())
-		{
-			return;
-		}
-
-		if (FIRE_CAPE_TOPIC.matcher(message).find())
-		{
-			fireOnce("firstFireCapeAlertSent", "Fire Cape", "achieved their first Fire cape");
-		}
-		else if (INFERNAL_CAPE_TOPIC.matcher(message).find())
-		{
-			fireOnce("firstInfernalCapeAlertSent", "Infernal Cape", "achieved their first Infernal cape");
-		}
-		else if (DIZANAS_QUIVER_TOPIC.matcher(message).find())
-		{
-			fireOnce("firstDizanasQuiverAlertSent", "Dizana's Quiver", "achieved their first Dizana's quiver");
-		}
-	}
-
-	// Flag is set before the send completes (not in onSuccess) so two chat lines about the same
-	// achievement arriving close together can't both slip past the check - same dedupe-first
-	// tradeoff CofferAlertListener/catabot's coffer dedup already makes elsewhere in this codebase.
-	private void fireOnce(String flagKey, String title, String summary)
-	{
-		if (!Strings.isNullOrEmpty(configManager.getConfiguration(CONFIG_GROUP, flagKey)))
+		Reward reward = match(event.getMessage());
+		if (reward == null)
 		{
 			return;
 		}
@@ -94,9 +103,7 @@ public class OneTimeRewardListener
 			return;
 		}
 
-		configManager.setConfiguration(CONFIG_GROUP, flagKey, "true");
-
-		alertsApiClient.sendAlert(token, AlertKind.ACCOMPLISHMENT, summary, title, new ApiCallback<Void>()
+		alertsApiClient.sendAlert(token, AlertKind.ACCOMPLISHMENT, reward.summary, reward.title, new ApiCallback<Void>()
 		{
 			@Override
 			public void onSuccess(Void result)

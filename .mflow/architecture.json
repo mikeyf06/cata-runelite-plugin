@@ -123,6 +123,11 @@
       "decision": "TRACKED_ACCOMPLISHMENT_ITEM_IDS narrowed to Twisted bow, Scythe of vitur, Tumeken's shadow, Ancient blood ornament kit, and Purifying sigil - removing Mokhaiotl cloth, Eye of Ayak (uncharged), and Avernic treads, which consolidate-loot-listeners had added as Doom of Mokhaiotl's 'big 3' drops",
       "reason": "A Mokhaiotl cloth drop posted as an ACCOMPLISHMENT alert instead of regular loot, surfacing that those three items don't belong in the fixed mega-rare allowlist - they're ordinary (if valuable) loot, not achievement-tier. They remain fully covered by the normal LOOT value-threshold path. Purifying sigil (Yama's assembled Radiant Oathplate sigil) was added instead: confirmed untradeable/unpriced via the OSRS Wiki, so it would never be caught by the value-threshold check and needs the fixed allowlist to ever alert at all - the same rationale that originally justified the allowlist's existence for Tbow/Scythe/Shadow/blood ornament kit.",
       "made_at": "2026-09-26 (narrow-accomplishment-allowlist)"
+    },
+    {
+      "decision": "OneTimeRewardListener (fire cape / infernal cape / Dizana's quiver) fires only on the game's Collection Log new-item chat message, and the per-profile one-time ConfigManager flags are removed; the accomplishment allowlist gains the uncharged Scythe of vitur and Tumeken's shadow IDs",
+      "reason": "Loose completion-text matching plus a plugin-side flag posted 'first' alerts for veterans who already owned the items; the Collection Log message lets the game decide what is genuinely new (wording verified against RuneLite's ScreenshotPlugin). Flags could also suppress a real alert after an earlier false positive. Separately, ToA/ToB drop the uncharged scythe/shadow, so the charged-only allowlist let those drops reach loot-sharing but never accomplishments. Trade-off: players need the in-game collection log notification enabled (KI-005)",
+      "made_at": "2026-10-18 (fix-accomplishment-alert-accuracy)"
     }
   ]
 }

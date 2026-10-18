@@ -36,8 +36,11 @@ public class LootAlertListener
 
 	private static final Set<Integer> TRACKED_ACCOMPLISHMENT_ITEM_IDS = Set.of(
 		ItemID.TWISTED_BOW,
+		// ToB/ToA drop the uncharged scythe/shadow; the charged IDs only appear in e.g. PK loot.
 		ItemID.SCYTHE_OF_VITUR,
+		ItemID.SCYTHE_OF_VITUR_UNCHARGED,
 		ItemID.TUMEKENS_SHADOW,
+		ItemID.TUMEKENS_SHADOW_UNCHARGED,
 		ItemID.ANCIENT_BLOOD_ORNAMENT_KIT,
 		ItemID.PURIFYING_SIGIL
 	);

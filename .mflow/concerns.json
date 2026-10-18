@@ -58,6 +58,13 @@
       "severity": "medium",
       "area": "poc-runelite-plugin.md vs README.md",
       "noted_at": "2026-08-07"
+    },
+    {
+      "id": "KI-005",
+      "summary": "Fire cape / infernal cape / Dizana's quiver accomplishment alerts depend on the in-game 'Collection log - new addition notification' setting: the 'New item added to your collection log' chat message only exists when the player has it enabled (RuneLite's ScreenshotPlugin gates on varbit 11959). A player with it off silently posts nothing. Accepted trade-off to eliminate false positives (fix-accomplishment-alert-accuracy); clan members should be told to enable the setting.",
+      "severity": "low",
+      "area": "alerts/OneTimeRewardListener.java",
+      "noted_at": "2026-10-18"
     }
   ],
   "warnings": [
@@ -97,7 +104,10 @@
     {
       "id": "WRN-007",
       "summary": "OneTimeRewardListener's fire cape / infernal cape / Dizana's quiver chat-text wording (FIRE_CAPE_TOPIC/INFERNAL_CAPE_TOPIC/DIZANAS_QUIVER_TOPIC/COMPLETION_VERB patterns) is still best-effort/unconfirmed against a live client producing those exact messages - narrowed down from WRN-006, which the spoofing half of this concern (ChatMessageType filtering) now resolves. If the wording is off, the affected alert would silently just never fire - no error, no crash. Confirm against real chat log text the first time each of these actually fires, and tighten the Pattern if it turns out wrong.",
-      "area": "alerts/OneTimeRewardListener.java"
+      "area": "alerts/OneTimeRewardListener.java",
+      "resolved_at": "2026-10-18T03:30:00Z",
+      "resolved_by": "fix-accomplishment-alert-accuracy",
+      "resolution_note": "The guessed completion-text patterns were replaced entirely by the game's Collection Log new-item message, whose wording is exact and taken from RuneLite's own ScreenshotPlugin (verified in client-1.12.39.jar). Pinned by OneTimeRewardListenerTest. Residual live-client risk is now only the in-game notification setting, tracked as KI-005."
     },
     {
       "id": "WRN-008",

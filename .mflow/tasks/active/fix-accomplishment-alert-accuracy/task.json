@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "file_type": "task",
+    "project_id": "cata-runelite-plugin",
+    "updated_at": "2026-10-18T02:22:00Z"
+  },
+  "task_id": "fix-accomplishment-alert-accuracy",
+  "track": "JDI",
+  "status": "deployed",
+  "project_type": "personal",
+  "branch": "bugfix/fix-accomplishment-alert-accuracy",
+  "request": {
+    "summary": "Stop false-positive fire cape/infernal cape/Dizana's quiver accomplishment alerts by gating them on a Collection Log new-item message, and make the mega-rare drop allowlist match the uncharged item IDs that Tumeken's shadow (and Scythe of vitur) actually drop as.",
+    "submitted_at": "2026-10-18T02:22:00Z",
+    "raw_requirements": "So a few issues:\n\n* False positives\n   * Fire cape, infernal cape, etc are posting for those where it isnt a Collection Log in some cases for Accomplishments. These should ONLY post when they are received as collection logs as well. \n* Tumekens Shadow did not post as a drop within Accomplishments, someone received one recently and it posted to loot-sharing instead. Alternatively, Twisted Bow is working as expected"
+  },
+  "quote": null,
+  "plan": {
+    "approach": "Gate OneTimeRewardListener on the game's Collection Log new-item chat message (wording verified from RuneLite's ScreenshotPlugin) instead of loose completion-text matching plus plugin-side one-time flags, and add the uncharged Scythe of vitur / Tumeken's shadow item IDs to LootAlertListener's accomplishment allowlist, since raids drop the uncharged items.",
+    "steps": [
+      "LootAlertListener.java: add SCYTHE_OF_VITUR_UNCHARGED and TUMEKENS_SHADOW_UNCHARGED to TRACKED_ACCOMPLISHMENT_ITEM_IDS (keep charged IDs).",
+      "OneTimeRewardListener.java: rewrite around the 'New item added to your collection log: <item>' message with a Reward enum + package-private static match(); drop topic/verb patterns, one-time flags and ConfigManager dependency; keep GAMEMESSAGE filter.",
+      "Add OneTimeRewardListenerTest (JUnit 4) pinning matches and non-matches.",
+      "Run ./gradlew compileJava test.",
+      "Log decisions in worklog (flags removed, uncharged-ID root cause incl. Scythe, in-game notification setting dependency, first automated test)."
+    ],
+    "planned_at": "2026-10-18T02:30:00Z"
+  },
+  "verification": {
+    "status": "passed",
+    "checked_at": "2026-10-18T03:00:00Z",
+    "notes": "Passed on automated evidence: no open blockers; ./gradlew compileJava test BUILD SUCCESSFUL; OneTimeRewardListenerTest 4/4 pass (verified from the XML report, not just the exit code); diff limited to the two planned source files plus the new test. Collection-log wording and the uncharged item IDs were verified against the pinned RuneLite jars, not recalled. Functional UAT (a real new collection log entry for fire cape/infernal cape/Dizana's quiver, a real Tumeken's shadow or Scythe drop posting as an accomplishment) cannot be triggered in dev and is deferred to post-ship live testing, as the developer previously established for this project. The developer has not explicitly confirmed the DoD items for this task.",
+    "fix_plan": null
+  },
+  "ship": {
+    "pr_link": null,
+    "shipped_at": "2026-10-18T03:30:00Z",
+    "deployed_at": "2026-10-18T03:30:00Z",
+    "environment": "production"
+  },
+  "archive": {
+    "archived_at": null,
+    "archive_path": null
+  },
+  "timestamps": {
+    "created_at": "2026-10-18T02:22:00Z",
+    "updated_at": "2026-10-18T02:22:00Z"
+  }
+}
